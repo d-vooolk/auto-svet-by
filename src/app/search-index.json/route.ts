@@ -1,0 +1,50 @@
+import { getCategoryById, getProducts } from "@/lib/catalog";
+import { pickUrl } from "@/lib/image-types";
+import { getImage } from "@/lib/images";
+import { normalize, type SearchEntry } from "@/lib/search";
+import { hasAnyInStock, priceRange } from "@/lib/variant";
+
+/**
+ * Индекс для поиска по каталогу.
+ *
+ * Лежит отдельным файлом и качается только когда пользователь коснулся поля
+ * поиска: на скорость главной и каталога он не влияет вообще. Сторонний
+ * поисковый сервис при 300–1000 товарах не нужен — фильтрация массива в
+ * браузере занимает доли миллисекунды.
+ */
+export const dynamic = "force-static";
+
+export function GET() {
+  const entries: SearchEntry[] = getProducts().map((product) => {
+    const category = getCategoryById(product.categoryId);
+    const entry = getImage(product.images[0]);
+
+    // Всё, по чему имеет смысл искать, склеивается в одну строку: название,
+    // бренд, категория, теги, характеристики и подписи опций (цоколя!).
+    const haystack = [
+      product.title,
+      product.brand ?? "",
+      category?.name ?? "",
+      product.excerpt ?? "",
+      product.tags.join(" "),
+      product.specs.map((spec) => `${spec.name} ${spec.value}`).join(" "),
+      product.optionGroups
+        .flatMap((group) => group.values.map((value) => value.label))
+        .join(" "),
+      product.sku ?? "",
+    ].join(" ");
+
+    return {
+      s: product.slug,
+      t: product.title,
+      ...(product.brand ? { b: product.brand } : {}),
+      c: category?.name ?? "",
+      p: priceRange(product).min,
+      a: hasAnyInStock(product) ? 1 : 0,
+      ...(entry ? { i: pickUrl(entry, 96) ?? undefined } : {}),
+      q: normalize(haystack),
+    };
+  });
+
+  return Response.json(entries);
+}

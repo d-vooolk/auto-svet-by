@@ -1,0 +1,98 @@
+[
+  {
+    "id": "glass-vw-golf-7",
+    "slug": "steklo-fary-vw-golf-7",
+    "categoryId": "glasses",
+    "title": "Стекло фары Volkswagen Golf 7",
+    "brand": "Aftermarket",
+    "price": 95,
+    "inStock": true,
+    "featured": true,
+    "unit": "шт.",
+    "images": [
+      "glasses/golf-7/main-1.jpg",
+      "glasses/golf-7/main-2.jpg",
+      "glasses/golf-7/main-3.jpg"
+    ],
+    "excerpt": "Замена помутневшего стекла вместо покупки новой фары. Герметик в комплекте.",
+    "description": "Стекло из поликарбоната с заводским УФ-лаком — не желтеет и не мутнеет, в отличие от полировки старого стекла, которой хватает на сезон.\n\nВ комплекте бутиловый герметик для проклейки по контуру. Для замены фару нужно снять и прогреть — работа примерно на 1.5 часа.",
+    "specs": [
+      { "name": "Материал", "value": "Поликарбонат + УФ-лак" },
+      { "name": "Совместимость", "value": "VW Golf 7 (2012–2020)" },
+      { "name": "В комплекте", "value": "Стекло, герметик" },
+      { "name": "Гарантия", "value": "6 месяцев" }
+    ],
+    "optionGroups": [
+      {
+        "id": "side",
+        "name": "Сторона",
+        "values": [
+          {
+            "id": "left",
+            "label": "Левое",
+            "price": 95,
+            "images": ["glasses/golf-7/left-1.jpg", "glasses/golf-7/left-2.jpg"]
+          },
+          {
+            "id": "right",
+            "label": "Правое",
+            "price": 95,
+            "images": ["glasses/golf-7/right-1.jpg"]
+          },
+          { "id": "pair", "label": "Пара (левое + правое)", "price": 175 }
+        ]
+      }
+    ],
+    "tags": ["стекло фары", "volkswagen", "golf", "поликарбонат"]
+  },
+  {
+    "id": "glass-bmw-f30",
+    "slug": "steklo-fary-bmw-f30",
+    "categoryId": "glasses",
+    "title": "Стекло фары BMW 3 F30",
+    "brand": "Aftermarket",
+    "price": 130,
+    "inStock": true,
+    "unit": "шт.",
+    "images": ["glasses/bmw-f30/main-1.jpg", "glasses/bmw-f30/main-2.jpg"],
+    "excerpt": "Стекло для рестайлинга и дорестайлинга F30. С УФ-защитой и герметиком.",
+    "description": "Стекло для фар BMW 3-й серии в кузове F30. Формы дорестайлинга и рестайлинга отличаются — выберите нужную версию в опциях, иначе стекло не сядет по контуру.",
+    "specs": [
+      { "name": "Материал", "value": "Поликарбонат + УФ-лак" },
+      { "name": "Совместимость", "value": "BMW 3 F30 (2011–2019)" },
+      { "name": "В комплекте", "value": "Стекло, герметик" },
+      { "name": "Гарантия", "value": "6 месяцев" }
+    ],
+    "optionGroups": [
+      {
+        "id": "version",
+        "name": "Версия",
+        "hint": "Дорестайлинг — до 2015 года, рестайлинг — после",
+        "values": [
+          {
+            "id": "pre",
+            "label": "Дорестайлинг",
+            "price": 130,
+            "images": ["glasses/bmw-f30/pre-1.jpg"]
+          },
+          {
+            "id": "lci",
+            "label": "Рестайлинг (LCI)",
+            "price": 145,
+            "images": ["glasses/bmw-f30/lci-1.jpg", "glasses/bmw-f30/lci-2.jpg"]
+          }
+        ]
+      },
+      {
+        "id": "side",
+        "name": "Сторона",
+        "values": [
+          { "id": "left", "label": "Левое", "priceDelta": 0 },
+          { "id": "right", "label": "Правое", "priceDelta": 0 },
+          { "id": "pair", "label": "Пара", "priceDelta": 110 }
+        ]
+      }
+    ],
+    "tags": ["стекло фары", "bmw", "f30"]
+  }
+]

@@ -1,26 +1,150 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ------------------------------------------------------------------ */
+/* Токены дизайна                                                      */
+/* ------------------------------------------------------------------ */
+
+@theme {
+  /* Фирменный синий. Основной — brand-700: на белом даёт контраст 6.3:1,
+     то есть проходит AA даже для мелкого текста. */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e3a8a;
+  --color-brand-900: #172554;
+
+  /* Акцент — тёплый свет фары. Только для бейджей и подсветки, не для текста. */
+  --color-accent-100: #fef3c7;
+  --color-accent-300: #fcd34d;
+  --color-accent-400: #fbbf24;
+  --color-accent-500: #f59e0b;
+  --color-accent-600: #d97706;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+
+  --radius-card: 1rem;
+
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-card-hover: 0 12px 28px -8px rgb(15 23 42 / 0.16),
+    0 4px 10px -4px rgb(15 23 42 / 0.08);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ------------------------------------------------------------------ */
+/* База                                                               */
+/* ------------------------------------------------------------------ */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Липкая шапка не должна накрывать заголовок при переходе по анкору. */
+    scroll-padding-top: 5rem;
+  }
+
+  body {
+    @apply bg-white text-slate-900 antialiased;
+    font-family: var(--font-sans);
+  }
+
+  /* Цены и количества не должны дёргаться при смене цифр. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+
+  /* Убираем крестик очистки в Chrome у поля поиска — рисуем свой. */
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ------------------------------------------------------------------ */
+/* Повторяющиеся сочетания                                            */
+/* ------------------------------------------------------------------ */
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Базовые свойства кнопки повторяются в каждом варианте: в Tailwind v4
+     @apply работает только с настоящими утилитами, свой класс через него
+     подключить нельзя. Селектор через запятую держит их в одном месте. */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3
+      text-sm font-semibold transition-colors
+      disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-900;
+  }
+
+  .btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-800
+      hover:border-slate-400 hover:bg-slate-50;
+  }
+
+  .btn-ghost {
+    @apply text-slate-700 hover:bg-slate-100;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-3
+      text-base text-slate-900 placeholder:text-slate-400
+      focus:border-brand-600 focus:ring-2 focus:ring-brand-100 focus:outline-none;
+  }
+
+  .field-error {
+    @apply border-red-400 focus:border-red-500 focus:ring-red-100;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700;
+  }
+
+  .card {
+    @apply rounded-card border border-slate-200 bg-white shadow-card;
+  }
+
+  /* Подложка под фото товара: у большинства снимков автосвета фон белый,
+     на чистом белом они «висят в воздухе». */
+  .photo-bed {
+    @apply bg-gradient-to-b from-slate-50 to-slate-100/70;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+
+  .prose-shop {
+    @apply text-[15px] leading-relaxed text-slate-700;
+  }
+
+  .prose-shop p + p {
+    @apply mt-4;
+  }
 }

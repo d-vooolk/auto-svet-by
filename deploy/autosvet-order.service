@@ -1,0 +1,60 @@
+# ------------------------------------------------------------------
+# systemd-юнит для сервиса заказов.
+#
+# Установка:
+#   sudo cp deploy/autosvet-order.service /etc/systemd/system/
+#   sudo cp deploy/order.env.example /etc/autosvet-order.env
+#   sudo nano /etc/autosvet-order.env        # вписать токен и chat_id
+#   sudo chmod 600 /etc/autosvet-order.env
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now autosvet-order
+#
+# Проверка:  systemctl status autosvet-order
+#            journalctl -u autosvet-order -f
+#            curl localhost:8787/health
+# ------------------------------------------------------------------
+
+[Unit]
+Description=Autosvet BY — приём заказов и отправка в Telegram
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+
+WorkingDirectory=/var/www/auto-svet.by/app
+ExecStart=/usr/bin/node server/order-service.mjs
+
+# Токен бота лежит здесь, а не в юните: юнит читается всеми, файл — только root.
+EnvironmentFile=/etc/autosvet-order.env
+
+Restart=always
+RestartSec=5s
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=autosvet-order
+
+# Сервис умеет ровно две вещи: писать журнал заказов и стучаться в Telegram.
+# Всё остальное ему запрещено — если в нём когда-нибудь найдут дыру, дальше
+# этой песочницы уйти не получится.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+
+# Единственная папка, куда разрешена запись — журнал заказов.
+ReadWritePaths=/var/www/auto-svet.by/orders
+
+[Install]
+WantedBy=multi-user.target

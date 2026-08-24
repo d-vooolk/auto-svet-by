@@ -1,0 +1,79 @@
+[
+  {
+    "id": "lens-mask-shroud",
+    "slug": "maska-linzy-universalnaya",
+    "categoryId": "accessories",
+    "title": "Маска линзы универсальная 3\"",
+    "brand": "NoName",
+    "price": 22,
+    "inStock": true,
+    "unit": "шт.",
+    "images": ["accessories/mask/main-1.jpg", "accessories/mask/main-2.jpg"],
+    "excerpt": "Закрывает стык линзы и фары. Несколько форм и цветов на выбор.",
+    "description": "Декоративная маска закрывает зазор между корпусом линзы и отражателем фары. Без неё установка выглядит колхозно: видно посадочное место и крепёж.\n\nМатериал — термостойкий ABS, выдерживает нагрев от галогена и ксенона.",
+    "specs": [
+      { "name": "Материал", "value": "ABS, термостойкий" },
+      { "name": "Под линзу", "value": "3 дюйма" },
+      { "name": "В комплекте", "value": "1 шт." }
+    ],
+    "optionGroups": [
+      {
+        "id": "style",
+        "name": "Форма",
+        "values": [
+          {
+            "id": "round",
+            "label": "Круглая",
+            "price": 22,
+            "images": ["accessories/mask/round-1.jpg"]
+          },
+          {
+            "id": "devil",
+            "label": "Devil Eyes",
+            "price": 28,
+            "images": [
+              "accessories/mask/devil-1.jpg",
+              "accessories/mask/devil-2.jpg"
+            ]
+          },
+          {
+            "id": "angel",
+            "label": "С ангельскими глазками",
+            "price": 34,
+            "images": ["accessories/mask/angel-1.jpg"]
+          }
+        ]
+      },
+      {
+        "id": "color",
+        "name": "Цвет",
+        "values": [
+          { "id": "black", "label": "Чёрный", "priceDelta": 0 },
+          { "id": "chrome", "label": "Хром", "priceDelta": 4 }
+        ]
+      }
+    ],
+    "tags": ["маска линзы", "shroud", "тюнинг фар"]
+  },
+  {
+    "id": "butyl-sealant",
+    "slug": "germetik-dlya-far-butilovyy",
+    "categoryId": "accessories",
+    "title": "Герметик для фар бутиловый, 5 м",
+    "brand": "NoName",
+    "price": 15,
+    "inStock": true,
+    "unit": "шт.",
+    "sku": "SEAL-BUT-5M",
+    "images": ["accessories/sealant/main-1.jpg"],
+    "excerpt": "Заводской герметик для проклейки фары после вскрытия. Хватает на 2 фары.",
+    "description": "Тот же бутиловый шнур, которым фары клеят на заводе: остаётся пластичным, не трескается и позволяет вскрыть фару повторно.\n\nПеред укладкой старый герметик нужно удалить, посадочное место обезжирить. Мотка на 5 метров хватает на две фары среднего размера.",
+    "specs": [
+      { "name": "Тип", "value": "Бутиловый шнур" },
+      { "name": "Длина", "value": "5 м" },
+      { "name": "Сечение", "value": "8 мм" },
+      { "name": "Рабочая температура", "value": "−40…+120 °C" }
+    ],
+    "tags": ["герметик", "бутил", "проклейка фар"]
+  }
+]

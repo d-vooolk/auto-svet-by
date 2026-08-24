@@ -1,36 +1,225 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Автосвет BY — интернет-магазин автосвета
 
-## Getting Started
+Статический магазин на Next.js: линзы, стёкла фар, лампы, блоки розжига.
+Каталог — обычные JSON-файлы, которые правятся руками. Онлайн-оплаты нет,
+заказ уходит менеджеру в Telegram.
 
-First, run the development server:
+- **Домен:** auto-svet.by
+- **Сборка:** `next build` → папка `out/`, обычные HTML/CSS/JS файлы
+- **Хостинг:** nginx на VPS раздаёт `out/`, рядом маленький Node-сервис
+  принимает заказы
+
+---
+
+## Быстрый старт
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run dev` перед запуском прогоняет препроцессор картинок. Фотографий в
+`media/` пока нет — вместо них будут заглушки, и в консоли появится список
+недостающих файлов. Это нормально.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Сборка боевой версии:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build        # результат в ./out
+npm run check        # типы + линт
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Где что лежит
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+data/                 ← ВСЁ содержимое магазина, правится руками
+  site.json             телефон, адрес, доставка, оплата, тексты
+  categories.json       разделы каталога
+  products/*.json       товары
+  SCHEMA.md             описание формата — читать до первой правки
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+media/                ← фотографии как есть, без обработки
+                        (см. media/README.md)
 
-## Deploy on Vercel
+src/
+  app/                  страницы
+  components/           компоненты интерфейса
+  lib/
+    catalog.ts          чтение и проверка data/
+    schema.ts           формат data/ (он же валидация на сборке)
+    variant.ts          опции товара: цена, фото, наличие
+    seo.ts              метатеги и разметка schema.org
+    search.ts           поиск по каталогу
+  store/cart.ts         корзина (localStorage)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+scripts/images.mjs    ← сжатие фотографий на сборке
+server/               ← сервис приёма заказов (единственная серверная часть)
+deploy/               ← nginx, systemd, скрипт деплоя
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Что менять чаще всего
+
+| Задача | Файл |
+|---|---|
+| Цена, наличие, описание товара | `data/products/*.json` |
+| Добавить товар | `data/products/*.json` + фото в `media/` |
+| Новый раздел каталога | `data/categories.json` |
+| Телефон, адрес, режим работы | `data/site.json` |
+| Стоимость и условия доставки | `data/site.json` → `delivery.methods` |
+| Блок «Как мы работаем» на главной | `data/site.json` → `features` |
+| Цвета, шрифт, скругления | `src/app/globals.css` (блок `@theme`) |
+
+Формат JSON описан в **[data/SCHEMA.md](data/SCHEMA.md)** — там же разобрано,
+как устроены опции товара (цоколь H7 / HB4 / H11 со своими фотографиями).
+
+---
+
+## Опции товара со своими фотографиями
+
+Главная нестандартная возможность. У лампы задаётся набор «Цоколь» со
+значениями H7, H11, HB4; у каждого значения может быть своя цена, свой
+артикул, своё наличие и **свой набор фотографий**. При переключении цоколя
+галерея меняется на фотографии этого варианта; если у варианта своих фото
+нет — показываются общие фото товара.
+
+Наборов может быть несколько (например «Цоколь» + «Цветовая температура») —
+тогда цены складываются. Подробные правила и примеры — в
+[data/SCHEMA.md](data/SCHEMA.md#опции-цоколь-h7--hb4--h11-со-своими-фотографиями).
+
+Логика живёт в одном файле — `src/lib/variant.ts`. Функции чистые, поэтому
+на сборке и в браузере при переключении опции результат гарантированно
+одинаковый.
+
+---
+
+## Почему сайт статический
+
+Каталог небольшой и меняется редко, значит все страницы можно посчитать
+один раз на сборке. Что это даёт:
+
+- **Скорость.** nginx отдаёт готовый файл с диска. Никакая связка
+  «сервер + база» так не сможет: там на каждый запрос идёт обращение к БД.
+- **Поиск.** В HTML сразу лежит и заголовок, и цена, и описание — краулеру
+  не нужно исполнять JavaScript. Метатеги, `sitemap.xml`, `robots.txt` и
+  разметка schema.org (`Product`, `Offer`, `BreadcrumbList`, `FAQPage`)
+  генерируются на сборке.
+- **Надёжность.** Падать нечему. Даже если сервис заказов остановится,
+  каталог продолжит работать — сломается только кнопка отправки, и на
+  странице появится текст заказа для пересылки вручную.
+- **История.** JSON в git — это бесплатный журнал изменений цен и откат
+  одной командой.
+
+Цена решения: правка JSON требует пересборки и деплоя (около минуты,
+автоматически). При правках раз в день это незаметно; если понадобится
+менять цены по двадцать раз в день, тогда есть смысл выносить цены во
+внешнюю таблицу — но это надстройка, переписывать сайт не придётся.
+
+### Что сделано ради скорости
+
+- Статический экспорт: ноль работы на сервере при запросе страницы.
+- Картинки сжимаются на сборке в AVIF и WebP на четыре ширины
+  (`scripts/images.mjs`), с размытой заглушкой вместо пустого места. Это
+  быстрее рантайм-оптимизатора Next: нет холодного старта и промахов кеша.
+- Шрифт скачивается на сборке и раздаётся со своего домена — ни одного
+  обращения к сторонним хостам.
+- Фильтры каталога не перерисовывают сетку: карточки приходят готовыми из
+  HTML, фильтр только скрывает лишние и меняет им CSS-свойство `order`.
+  Поэтому в бандл не уезжает весь каталог, а краулер видит все товары.
+- Индекс поиска (`search-index.json`) качается только когда пользователь
+  коснулся поля поиска.
+- Иконки — инлайновый SVG, без icon-библиотеки.
+
+---
+
+## Приём заказов
+
+`server/order-service.mjs` — единственная серверная часть. Слушает
+`POST /api/order` на localhost, nginx проксирует туда запросы с сайта.
+
+Что он делает:
+
+1. Проверяет заявку: имя, телефон, состав корзины, адрес.
+2. **Пересчитывает сумму по своему прайсу** (`variants.json` из сборки) —
+   подменить цену из консоли браузера не получится. Расхождения попадают в
+   сообщение менеджеру отдельным блоком.
+3. Дописывает заявку в журнал `orders.jsonl`.
+4. Отправляет в Telegram.
+
+Порядок пунктов 3 и 4 важен: заявка сначала оказывается на диске и только
+потом уходит в мессенджер. Если Telegram недоступен, заказ не потерян.
+
+Плюс ограничение частоты (5 заявок с одного IP за 10 минут) и скрытое поле
+формы против ботов.
+
+Локальная проверка:
+
+```bash
+cp deploy/order.env.example .env    # вписать токен бота и chat_id
+npm run build                       # чтобы появился out/variants.json
+VARIANTS_FILE=out/variants.json npm run order-service
+curl localhost:8787/health
+```
+
+---
+
+## Деплой на VPS
+
+Одноразовая подготовка сервера:
+
+```bash
+# Node 22+ и nginx
+sudo apt update && sudo apt install -y nginx curl
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# Структура папок
+sudo mkdir -p /var/www/auto-svet.by/{app,releases,orders}
+sudo chown -R $USER:www-data /var/www/auto-svet.by
+git clone <адрес-репозитория> /var/www/auto-svet.by/app
+
+# Сервис заказов
+sudo cp /var/www/auto-svet.by/app/deploy/autosvet-order.service /etc/systemd/system/
+sudo cp /var/www/auto-svet.by/app/deploy/order.env.example /etc/autosvet-order.env
+sudo nano /etc/autosvet-order.env      # токен бота и chat_id
+sudo chmod 600 /etc/autosvet-order.env
+sudo systemctl daemon-reload && sudo systemctl enable --now autosvet-order
+
+# nginx
+sudo cp /var/www/auto-svet.by/app/deploy/nginx.conf /etc/nginx/sites-available/auto-svet.by
+sudo ln -s /etc/nginx/sites-available/auto-svet.by /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+
+# HTTPS
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d auto-svet.by -d www.auto-svet.by
+```
+
+Дальше каждый деплой — одна команда:
+
+```bash
+cd /var/www/auto-svet.by/app && ./deploy/deploy.sh
+```
+
+Скрипт собирает сайт в новую папку и переключает ссылку `current` только
+после успешной сборки. Пока сборка идёт, посетители видят прежнюю версию;
+если в JSON опечатка и сборка упала — на сайте не меняется вообще ничего.
+Пять предыдущих версий хранятся для отката: достаточно перевести ссылку
+`current` на любую из них.
+
+---
+
+## Перед запуском заполнить
+
+- [ ] `data/site.json` — реальные телефон, адрес, режим работы, Telegram,
+      условия и цены доставки
+- [ ] `data/categories.json` и `data/products/*.json` — настоящий каталог
+      вместо примеров
+- [ ] `media/` — фотографии
+- [ ] Токен бота и `chat_id` в `/etc/autosvet-order.env`
+- [ ] Купить домен `auto-svet.by`, направить A-запись на IP сервера
+- [ ] Добавить сайт в Google Search Console и Яндекс.Вебмастер, отправить
+      `sitemap.xml`
+- [ ] Проверить страницу товара валидатором разметки:
+      https://search.google.com/test/rich-results

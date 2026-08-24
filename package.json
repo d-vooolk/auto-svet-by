@@ -1,17 +1,27 @@
 {
-  "name": "shop",
-  "version": "0.1.0",
+  "name": "autosvet-shop",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/images.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/images.mjs",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "images": "node scripts/images.mjs",
+    "images:force": "node scripts/images.mjs --force",
+    "order-service": "node server/order-service.mjs",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint",
+    "verify": "node scripts/verify-seo.mjs"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "next": "16.3.2",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -20,6 +30,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
