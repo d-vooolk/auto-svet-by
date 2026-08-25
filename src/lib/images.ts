@@ -1,39 +1,58 @@
-import fs from "node:fs";
-import path from "node:path";
-
+import { bumpImagesVersion, getDb, imagesVersion } from "./db";
 import type { ImageEntry, ImageMap } from "./image-types";
 
 /**
- * Доступ к манифесту, который сгенерировал scripts/images.mjs.
+ * Манифест обработанных фотографий.
  *
- * Читается с диска, а не через import: манифест содержит base64 размытых
- * заглушек, весит немало и полностью пересобирается из ./media — держать его
- * в репозитории ради того, чтобы TypeScript нашёл модуль, не хочется.
+ * Раньше его собирал на сборке scripts/images.mjs и складывал в
+ * src/generated/images.json. Теперь запись появляется в момент загрузки фото
+ * через админку — сборка для этого больше не нужна.
  *
- * Модуль серверный, работает только на сборке. Клиентским компонентам
- * манифест целиком не отдаём — иначе он уедет в бандл; вместо этого страница
- * передаёт им ровно нужные записи (см. pickImages).
+ * Сами файлы (avif/webp/jpeg во всех ширинах) по-прежнему лежат в
+ * public/img/ и раздаются nginx напрямую. В базе — только размеры, размытая
+ * заглушка и список ссылок.
+ *
+ * Модуль серверный. Клиентским компонентам манифест целиком не отдаём —
+ * иначе он уедет в бандл; вместо этого страница передаёт им ровно нужные
+ * записи (см. pickImages).
  */
 
-const MANIFEST_PATH = path.join(
-  process.cwd(),
-  "src",
-  "generated",
-  "images.json",
-);
+interface ImageRow {
+  path: string;
+  w: number;
+  h: number;
+  blur: string;
+  sources: string;
+  fallback: string;
+}
 
-let manifest: ImageMap | null = null;
+let cache: ImageMap | null = null;
+let cachedVersion = -1;
+
+function toEntry(row: ImageRow): ImageEntry {
+  return {
+    w: row.w,
+    h: row.h,
+    blur: row.blur,
+    sources: JSON.parse(row.sources) as ImageEntry["sources"],
+    fallback: row.fallback,
+  };
+}
 
 function load(): ImageMap {
-  if (manifest) return manifest;
-  try {
-    manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf8")) as ImageMap;
-  } catch {
-    // Препроцессор ещё не запускался — работаем без картинок, вместо них
-    // покажутся заглушки. Сборку из-за этого валить не за что.
-    manifest = {};
-  }
-  return manifest;
+  const version = imagesVersion();
+  if (cache && cachedVersion === version) return cache;
+
+  const rows = getDb()
+    .prepare("SELECT path, w, h, blur, sources, fallback FROM images")
+    .all() as ImageRow[];
+
+  const map: ImageMap = {};
+  for (const row of rows) map[row.path] = toEntry(row);
+
+  cache = map;
+  cachedVersion = version;
+  return map;
 }
 
 export function getImage(imagePath: string | undefined): ImageEntry | null {
@@ -50,4 +69,91 @@ export function pickImages(paths: string[]): ImageMap {
     if (entry) map[imagePath] = entry;
   }
   return map;
+}
+
+/* ------------------------------------------------------------------ */
+/* Запись — для загрузки фото из админки                               */
+/* ------------------------------------------------------------------ */
+
+export interface StoredImage extends ImageEntry {
+  path: string;
+  bytes: number;
+  createdAt: number;
+}
+
+/** Кладёт или заменяет запись о фотографии. Файлы пишет вызывающий код. */
+export function saveImage(
+  imagePath: string,
+  entry: ImageEntry,
+  bytes: number,
+): void {
+  getDb()
+    .prepare(
+      `INSERT INTO images (path, w, h, blur, sources, fallback, bytes, created_at)
+       VALUES (@path, @w, @h, @blur, @sources, @fallback, @bytes, @createdAt)
+       ON CONFLICT(path) DO UPDATE SET
+         w = @w, h = @h, blur = @blur, sources = @sources,
+         fallback = @fallback, bytes = @bytes, created_at = @createdAt`,
+    )
+    .run({
+      path: imagePath,
+      w: entry.w,
+      h: entry.h,
+      blur: entry.blur,
+      sources: JSON.stringify(entry.sources),
+      fallback: entry.fallback,
+      bytes,
+      createdAt: Date.now(),
+    });
+  bumpImagesVersion();
+}
+
+export function deleteImage(imagePath: string): void {
+  getDb().prepare("DELETE FROM images WHERE path = ?").run(imagePath);
+  bumpImagesVersion();
+}
+
+/** Все фотографии, новые сверху — для экрана выбора картинки в админке. */
+export function listImages(): StoredImage[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT path, w, h, blur, sources, fallback, bytes, created_at
+       FROM images ORDER BY created_at DESC, path`,
+    )
+    .all() as Array<ImageRow & { bytes: number; created_at: number }>;
+
+  return rows.map((row) => ({
+    path: row.path,
+    ...toEntry(row),
+    bytes: row.bytes,
+    createdAt: row.created_at,
+  }));
+}
+
+/**
+ * Где используется фотография — проверка перед удалением.
+ *
+ * Ищем и в товарах (общая галерея или галерея опции), и в разделах: у раздела
+ * тоже есть картинка, и забыть про неё значит получить заглушку на плитке
+ * каталога.
+ *
+ * Поиск подстрокой по JSON, без нормализации в отдельную таблицу: товаров
+ * сотни, а удаление фото — операция редкая.
+ */
+export function imageUsage(imagePath: string): string[] {
+  const needle = `%"${imagePath}"%`;
+  const db = getDb();
+
+  const products = db
+    .prepare("SELECT title FROM products WHERE data LIKE ? ORDER BY title LIMIT 20")
+    .all(needle) as Array<{ title: string }>;
+
+  const categories = db
+    .prepare("SELECT name FROM categories WHERE data LIKE ? ORDER BY name LIMIT 20")
+    .all(needle) as Array<{ name: string }>;
+
+  return [
+    ...products.map((row) => row.title),
+    ...categories.map((row) => `раздел «${row.name}»`),
+  ];
 }

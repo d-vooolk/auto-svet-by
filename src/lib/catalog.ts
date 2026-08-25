@@ -1,10 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-
+import { catalogVersion, getDb } from "./db";
 import {
-  categorySchema,
   parseOrThrow,
   productSchema,
+  categorySchema,
   siteSchema,
   type Category,
   type Product,
@@ -12,117 +10,103 @@ import {
 } from "./schema";
 
 /**
- * Чтение каталога из ./data. Работает только на этапе сборки — сайт
- * статический, поэтому в браузер попадает уже готовый HTML, а не этот код.
+ * Чтение каталога из базы.
  *
- * Новый файл в data/products/ подхватывается сам, править код не нужно.
+ * Раньше здесь читались файлы ./data/*.json. Формат данных при переезде не
+ * изменился: в колонке `data` лежит ровно тот же объект товара, что лежал в
+ * JSON, и проверяется он той же схемой из schema.ts. Поэтому админка и файлы
+ * описывают одно и то же, а `scripts/import-data.mjs` умеет переливать одно
+ * в другое.
+ *
+ * Функции остались синхронными — драйвер SQLite синхронный. Благодаря этому
+ * все страницы и компоненты, написанные под чтение с диска, работают без
+ * единой правки.
  */
-
-const DATA_DIR = path.join(process.cwd(), "data");
-const PRODUCTS_DIR = path.join(DATA_DIR, "products");
-
-function readJson(file: string): unknown {
-  const raw = fs.readFileSync(file, "utf8");
-  try {
-    return JSON.parse(raw);
-  } catch (error) {
-    throw new Error(
-      `\n\nБитый JSON в файле ${path.relative(process.cwd(), file)}\n` +
-        `  ${(error as Error).message}\n\n` +
-        `Скорее всего лишняя или пропущенная запятая. Проверьте файл в редакторе.\n`,
-    );
-  }
-}
 
 interface Catalog {
   site: Site;
   categories: Category[];
   products: Product[];
+  /** Значение счётчика правок, при котором собран этот снимок. */
+  version: number;
 }
 
 let cache: Catalog | null = null;
 
+interface ProductRow {
+  data: string;
+}
+
+interface CategoryRow {
+  data: string;
+}
+
+/**
+ * Снимок каталога целиком. Собирается заново только если после прошлого раза
+ * что-то сохранили в админке: catalogVersion() — это один короткий запрос,
+ * а разбор шести сотен товаров схемой — уже заметная работа.
+ */
 function load(): Catalog {
-  if (cache) return cache;
+  const version = catalogVersion();
+  if (cache && cache.version === version) return cache;
+
+  const db = getDb();
+
+  const siteRow = db
+    .prepare("SELECT value FROM settings WHERE key = 'site'")
+    .get() as { value: string } | undefined;
+
+  if (!siteRow) {
+    throw new Error(
+      "\n\nВ базе нет настроек сайта — похоже, она ещё пустая.\n" +
+        "Залейте начальные данные: npm run import\n",
+    );
+  }
 
   const site = parseOrThrow(
     siteSchema,
-    readJson(path.join(DATA_DIR, "site.json")),
-    "data/site.json",
+    JSON.parse(siteRow.value),
+    "настройки сайта (таблица settings)",
   );
 
-  const categories = parseOrThrow(
-    categorySchema.array(),
-    readJson(path.join(DATA_DIR, "categories.json")),
-    "data/categories.json",
-  ).sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  const categoryRows = db
+    .prepare("SELECT data FROM categories ORDER BY sort_order, name")
+    .all() as CategoryRow[];
 
-  const productFiles = fs.existsSync(PRODUCTS_DIR)
-    ? fs
-        .readdirSync(PRODUCTS_DIR)
-        .filter((name) => name.endsWith(".json"))
-        .sort()
-    : [];
+  const categories = categoryRows.map((row, index) =>
+    parseOrThrow(
+      categorySchema,
+      JSON.parse(row.data),
+      `категория №${index + 1} (таблица categories)`,
+    ),
+  );
 
-  const products: Product[] = [];
-  for (const name of productFiles) {
-    const relative = `data/products/${name}`;
-    const parsed = parseOrThrow(
-      productSchema.array(),
-      readJson(path.join(PRODUCTS_DIR, name)),
-      relative,
-    );
-    products.push(...parsed);
-  }
+  const productRows = db
+    .prepare(
+      `SELECT p.data FROM products p
+       LEFT JOIN categories c ON c.id = p.category_id
+       ORDER BY c.sort_order, p.sort_order, p.title`,
+    )
+    .all() as ProductRow[];
 
-  validate(categories, products);
+  const products = productRows.map((row, index) =>
+    parseOrThrow(
+      productSchema,
+      JSON.parse(row.data),
+      `товар №${index + 1} (таблица products)`,
+    ),
+  );
 
-  cache = { site, categories, products };
+  cache = { site, categories, products, version };
   return cache;
 }
 
-/** Проверки, которые не выражаются схемой одного файла. */
-function validate(categories: Category[], products: Product[]): void {
-  const problems: string[] = [];
-
-  const seen = <T>(items: T[], key: (item: T) => string, label: string) => {
-    const counts = new Map<string, number>();
-    for (const item of items) {
-      const value = key(item);
-      counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-    for (const [value, count] of counts) {
-      if (count > 1) problems.push(`${label} «${value}» встречается ${count} раза`);
-    }
-  };
-
-  seen(categories, (c) => c.id, "id категории");
-  seen(categories, (c) => c.slug, "slug категории");
-  seen(products, (p) => p.id, "id товара");
-  seen(products, (p) => p.slug, "slug товара");
-
-  const categoryIds = new Set(categories.map((c) => c.id));
-  for (const product of products) {
-    if (!categoryIds.has(product.categoryId)) {
-      problems.push(
-        `товар «${product.id}»: categoryId «${product.categoryId}» отсутствует в data/categories.json`,
-      );
-    }
-    for (const group of product.optionGroups) {
-      seen(group.values, (v) => v.id, `товар «${product.id}», опция «${group.id}»: id значения`);
-    }
-    seen(
-      product.optionGroups,
-      (g) => g.id,
-      `товар «${product.id}»: id набора опций`,
-    );
-  }
-
-  if (problems.length) {
-    throw new Error(
-      `\n\nКаталог не сходится:\n${problems.map((p) => `  • ${p}`).join("\n")}\n`,
-    );
-  }
+/**
+ * Сбросить снимок принудительно. Нужен импортёру и тестам, которые правят
+ * базу в обход админки и потому не двигают счётчик версий.
+ */
+export function invalidateCatalog(): void {
+  cache = null;
 }
 
 export function getSite(): Site {
@@ -147,6 +131,10 @@ export function getProducts(): Product[] {
 
 export function getProductBySlug(slug: string): Product | undefined {
   return load().products.find((p) => p.slug === slug);
+}
+
+export function getProductById(id: string): Product | undefined {
+  return load().products.find((p) => p.id === id);
 }
 
 export function getProductsByCategory(categoryId: string): Product[] {
@@ -188,4 +176,48 @@ export function getBrands(categoryId?: string): string[] {
     if (product.brand) brands.add(product.brand);
   }
   return [...brands].sort((a, b) => a.localeCompare(b, "ru"));
+}
+
+/**
+ * Когда каталог правили последний раз — для lastModified в sitemap.xml.
+ * Раньше эту дату брали из времени изменения JSON-файлов.
+ */
+export function getLastModified(): Date {
+  const row = getDb()
+    .prepare(
+      `SELECT MAX(updated_at) AS at FROM (
+         SELECT updated_at FROM products
+         UNION ALL
+         SELECT updated_at FROM categories
+       )`,
+    )
+    .get() as { at: number | null };
+  return new Date(row.at ?? Date.now());
+}
+
+/**
+ * Даты правки по адресам страниц — для честного lastmod в sitemap.xml.
+ *
+ * Раньше на все страницы каталога шла одна дата: время изменения JSON-файла.
+ * Теперь у каждого товара своя, и поисковик видит, что правился один товар,
+ * а не весь каталог разом.
+ */
+export function getPageDates(): Map<string, Date> {
+  const dates = new Map<string, Date>();
+
+  const products = getDb()
+    .prepare("SELECT slug, updated_at FROM products")
+    .all() as Array<{ slug: string; updated_at: number }>;
+  for (const row of products) {
+    dates.set(`/product/${row.slug}/`, new Date(row.updated_at));
+  }
+
+  const categories = getDb()
+    .prepare("SELECT slug, updated_at FROM categories")
+    .all() as Array<{ slug: string; updated_at: number }>;
+  for (const row of categories) {
+    dates.set(`/catalog/${row.slug}/`, new Date(row.updated_at));
+  }
+
+  return dates;
 }

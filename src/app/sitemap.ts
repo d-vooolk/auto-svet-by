@@ -1,14 +1,16 @@
-import fs from "node:fs";
-import path from "node:path";
-
 import type { MetadataRoute } from "next";
 
-import { getCategories, getProducts } from "@/lib/catalog";
+import {
+  getCategories,
+  getLastModified,
+  getPageDates,
+  getProducts,
+} from "@/lib/catalog";
 import { absoluteUrl } from "@/lib/seo";
 
 /**
- * sitemap.xml. При статическом экспорте Next записывает его файлом в out/ —
- * отдельной генерации не нужно.
+ * sitemap.xml. Собирается один раз и пересобирается вместе со страницами
+ * каталога, когда в админке что-то сохранили (см. src/lib/revalidate.ts).
  *
  * Страницы корзины и подтверждения заказа сюда не попадают: индексировать в
  * них нечего (см. robots.ts).
@@ -16,30 +18,13 @@ import { absoluteUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
-/** Время последней правки данных — честный lastmod для страниц каталога. */
-function catalogModified(): Date {
-  const files = [path.join(process.cwd(), "data", "categories.json")];
-  const productsDir = path.join(process.cwd(), "data", "products");
-  if (fs.existsSync(productsDir)) {
-    for (const name of fs.readdirSync(productsDir)) {
-      if (name.endsWith(".json")) files.push(path.join(productsDir, name));
-    }
-  }
-
-  let newest = 0;
-  for (const file of files) {
-    try {
-      newest = Math.max(newest, fs.statSync(file).mtimeMs);
-    } catch {
-      // Файла нет — пропускаем, дата возьмётся из остальных.
-    }
-  }
-  return newest ? new Date(newest) : new Date();
-}
-
 export default function sitemap(): MetadataRoute.Sitemap {
-  const modified = catalogModified();
+  // Дата правки у каждой страницы своя — она лежит в базе рядом с товаром.
+  const dates = getPageDates();
+  const modified = getLastModified();
   const built = new Date();
+
+  const dateFor = (url: string) => dates.get(url) ?? modified;
 
   return [
     {
@@ -56,13 +41,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...getCategories().map((category) => ({
       url: absoluteUrl(`/catalog/${category.slug}/`),
-      lastModified: modified,
+      lastModified: dateFor(`/catalog/${category.slug}/`),
       changeFrequency: "weekly" as const,
       priority: 0.9,
     })),
     ...getProducts().map((product) => ({
       url: absoluteUrl(`/product/${product.slug}/`),
-      lastModified: modified,
+      lastModified: dateFor(`/product/${product.slug}/`),
       changeFrequency: "weekly" as const,
       priority: 0.8,
     })),

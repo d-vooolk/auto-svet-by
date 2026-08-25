@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 
-import { Footer } from "@/components/Footer";
-import { Header } from "@/components/Header";
 import { getSite } from "@/lib/catalog";
 
 import "./globals.css";
+
+/**
+ * Корневой макет: только каркас документа, шрифт и общие мета-теги.
+ *
+ * Шапки и подвала магазина здесь намеренно нет — они переехали в макет
+ * витрины, src/app/(shop)/layout.tsx. Причина простая: админка живёт в том же
+ * приложении, и меню каталога с корзиной ей ни к чему. Группа (shop) на
+ * адреса не влияет: /catalog/ так и остался /catalog/.
+ */
 
 /**
  * Шрифт скачивается на сборке и раздаётся с нашего домена: нет запроса к
@@ -64,21 +71,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru" className={inter.variable}>
-      <body className="flex min-h-dvh flex-col">
-        {/* Ссылка для клавиатуры и скринридеров: позволяет пропустить шапку
-            с меню и поиском и уйти сразу к содержимому страницы. */}
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-white"
-        >
-          К содержимому
-        </a>
-        <Header />
-        <main id="main" className="flex-1">
-          {children}
-        </main>
-        <Footer />
-      </body>
+      <body className="min-h-dvh">{children}</body>
     </html>
   );
 }
