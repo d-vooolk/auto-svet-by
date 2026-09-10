@@ -8,6 +8,7 @@ import { deleteCategoryAction, saveCategoryAction } from "@/app/admin/actions";
 import { ImagePicker } from "@/components/admin/ImagePicker";
 import { Field, Problems, Section } from "@/components/admin/form-parts";
 import { SpinnerIcon, TrashIcon } from "@/components/icons";
+import { pluralize } from "@/lib/format";
 import type { Category } from "@/lib/schema";
 import { toSlug } from "@/lib/slug";
 
@@ -237,20 +238,32 @@ export function CategoryForm({
                 </button>
               </>
             ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                disabled={productCount > 0}
-                title={
-                  productCount > 0
-                    ? `Сначала перенесите ${productCount} товар(ов) в другой раздел`
-                    : undefined
-                }
-                className="btn-ghost py-2 text-sm text-red-700 hover:bg-red-50 disabled:text-brand-300 disabled:hover:bg-transparent"
-              >
-                <TrashIcon className="h-4 w-4" />
-                Удалить
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={productCount > 0}
+                  className="btn-ghost py-2 text-sm text-red-700 hover:bg-red-50 disabled:text-brand-300 disabled:hover:bg-transparent"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  Удалить
+                </button>
+                {productCount > 0 && (
+                  // Причину пишем рядом с кнопкой, а не в title: события мыши
+                  // до disabled-кнопки не доходят, и подсказку никто не увидит
+                  // — со стороны кнопка выглядит просто сломанной.
+                  <p className="text-xs text-brand-400">
+                    Сначала перенесите{" "}
+                    <Link
+                      href={`/admin/products/?category=${draft.id}`}
+                      className="text-brand-700 underline underline-offset-2 hover:text-brand-900"
+                    >
+                      {pluralize(productCount, "товар", "товара", "товаров")}
+                    </Link>{" "}
+                    в другой раздел
+                  </p>
+                )}
+              </>
             ))}
 
           <button
