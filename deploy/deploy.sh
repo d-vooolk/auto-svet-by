@@ -75,7 +75,10 @@ pm2 save >/dev/null
 
 echo "==> Жду, пока поднимется"
 for attempt in $(seq 1 30); do
-  if curl -fsS --max-time 2 -o /dev/null "localhost:$PORT/"; then
+  # Без -S и со скрытым stderr: пока процесс поднимается, отказ соединения
+  # это ожидаемое состояние, а не ошибка. С -S curl печатал «Failed to
+  # connect» на первой же попытке, и успешный деплой выглядел тревожно.
+  if curl -fs --max-time 2 -o /dev/null "localhost:$PORT/" 2>/dev/null; then
     echo "    сайт отвечает (попытка $attempt)"
     break
   fi
