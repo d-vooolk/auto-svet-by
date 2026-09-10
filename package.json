@@ -17,7 +17,8 @@
     "verify": "node scripts/verify-seo.mjs",
     "weight": "node scripts/report-weight.mjs",
     "chunks": "node scripts/diag-chunks.mjs",
-    "test-order": "node scripts/test-order.mjs"
+    "test-order": "node scripts/test-order.mjs",
+    "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
