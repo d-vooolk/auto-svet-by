@@ -17,7 +17,9 @@
  * попали в HTML без участия JavaScript, sitemap не пустой.
  */
 
-const BASE = (process.env.SITE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+import { env } from "../src/lib/env.mjs";
+
+const BASE = env("SITE_URL", "http://127.0.0.1:3000").replace(/\/$/, "");
 
 let failures = 0;
 

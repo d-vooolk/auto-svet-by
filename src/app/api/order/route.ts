@@ -1,4 +1,5 @@
 import { getSite } from "@/lib/catalog";
+import { env, envNumber } from "@/lib/env.mjs";
 import { createOrder, markTelegramSent, type OrderItem } from "@/lib/orders";
 import { buildPriceList } from "@/lib/prices";
 
@@ -30,7 +31,7 @@ const MAX_ITEMS = 50;
 const RATE_WINDOW_MS = 10 * 60 * 1000;
 const ABUSE_LIMIT = 40;
 
-const rateLimit = Number(process.env.ORDER_RATE_LIMIT ?? 5);
+const rateLimit = envNumber("ORDER_RATE_LIMIT", 5);
 
 /* ------------------------------------------------------------------ */
 /* Ограничение частоты                                                 */
@@ -278,8 +279,8 @@ function buildMessage(
 async function sendToTelegram(
   text: string,
 ): Promise<{ ok: boolean; reason?: string }> {
-  const token = process.env.TELEGRAM_BOT_TOKEN ?? "";
-  const chatId = process.env.TELEGRAM_CHAT_ID ?? "";
+  const token = env("TELEGRAM_BOT_TOKEN", "");
+  const chatId = env("TELEGRAM_CHAT_ID", "");
   if (!token || !chatId) return { ok: false, reason: "не настроен" };
 
   // Telegram обычно отвечает быстро; если завис — не держим клиента.

@@ -63,8 +63,12 @@ var/         база и бэкапы (не в репозитории)
 ## Деплой
 
 ```bash
-cd /var/www/auto-svet.by/app && ./deploy/deploy.sh
+cd /var/www/auto-svet.by && ./deploy/deploy.sh
 ```
 
-Первичная настройка сервера описана в шапках `deploy/autosvet.service` и
-`deploy/nginx.conf`.
+Сайт запущен под PM2 как приложение `autosvet` на порту 3011 (3000 и 3010
+на сервере заняты другими проектами), nginx перед ним обратный прокси.
+Node — 22 из nvm: системному 18, а `better-sqlite3` требует 22.
+
+Подробности в шапках `ecosystem.config.cjs`, `deploy/nginx.conf` и
+`deploy/deploy.sh`.

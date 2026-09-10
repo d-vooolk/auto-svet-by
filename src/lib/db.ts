@@ -3,6 +3,7 @@ import path from "node:path";
 
 import Database from "better-sqlite3";
 
+import { env } from "./env.mjs";
 // Схема и порядок миграций описаны один раз в migrations.mjs — оттуда же их
 // берут консольные скрипты, которым TypeScript недоступен.
 import { migrate } from "./migrations.mjs";
@@ -23,8 +24,7 @@ import { migrate } from "./migrations.mjs";
  * и переживает деплой — deploy.sh обновляет код рядом, но её не трогает.
  */
 
-const DB_PATH =
-  process.env.DATABASE_PATH ?? path.join(process.cwd(), "var", "shop.db");
+const DB_PATH = env("DATABASE_PATH", path.join(process.cwd(), "var", "shop.db"));
 
 /**
  * В dev Next перезагружает модули на каждое изменение файла. Без этого

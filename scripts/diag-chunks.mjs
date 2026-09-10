@@ -16,7 +16,9 @@
 
 import { gzipSync } from "node:zlib";
 
-const BASE = (process.env.SITE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+import { env } from "../src/lib/env.mjs";
+
+const BASE = env("SITE_URL", "http://127.0.0.1:3000").replace(/\/$/, "");
 const page = process.argv[2] ?? "/product/osram-night-breaker-200/";
 
 async function get(url) {

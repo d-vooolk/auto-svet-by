@@ -20,7 +20,9 @@
  * отсутствие адреса и — главное — попытку подсунуть свою цену.
  */
 
-const BASE = (process.env.ORDER_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
+import { env } from "../src/lib/env.mjs";
+
+const BASE = env("ORDER_URL", "http://127.0.0.1:3000").replace(/\/$/, "");
 
 // Со слешем на конце: в конфиге стоит trailingSlash, и без него сервер
 // ответит редиректом вместо обработки заказа.

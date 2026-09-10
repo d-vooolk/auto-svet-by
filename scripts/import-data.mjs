@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 
 import Database from "better-sqlite3";
 
+import { env } from "../src/lib/env.mjs";
 import { processImage } from "../src/lib/image-pipeline.mjs";
 import { openDatabase } from "../src/lib/migrations.mjs";
 
@@ -29,7 +30,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DATA_DIR = path.join(ROOT, "data");
 const MEDIA_DIR = path.join(ROOT, "media");
 const OUT_DIR = path.join(ROOT, "public", "img");
-const DB_PATH = process.env.DATABASE_PATH ?? path.join(ROOT, "var", "shop.db");
+const DB_PATH = env("DATABASE_PATH", path.join(ROOT, "var", "shop.db"));
 
 const force = process.argv.includes("--force");
 const CONCURRENCY = Math.max(2, Math.min(8, os.cpus().length - 1));

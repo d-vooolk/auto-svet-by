@@ -20,10 +20,11 @@ import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 
 import { openDatabase } from "../src/lib/migrations.mjs";
+import { env } from "../src/lib/env.mjs";
 import { checkPasswordStrength, hashPassword } from "../src/lib/password.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const DB_PATH = process.env.DATABASE_PATH ?? path.join(ROOT, "var", "shop.db");
+const DB_PATH = env("DATABASE_PATH", path.join(ROOT, "var", "shop.db"));
 
 function arg(name) {
   const index = process.argv.indexOf(`--${name}`);
