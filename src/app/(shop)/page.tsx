@@ -101,19 +101,9 @@ export default function HomePage() {
       <section className="beam grid-hint relative overflow-hidden border-b border-brand-100">
         <div className="container-page grid gap-12 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-8 lg:py-20">
           <div className="rise">
-            {/* Плашка статуса: город и часы работы до заголовка — для
-                местного магазина это первое, что хотят знать. */}
-            <span className="inline-flex items-center gap-2.5 rounded-full border border-brand-100 bg-white/70 py-1.5 pr-4 pl-3 text-xs font-medium text-brand-500 backdrop-blur">
-              <span className="relative flex h-2 w-2" aria-hidden="true">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-accent-400 opacity-60" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-500" />
-              </span>
-              {site.address.city} · {site.workHours}
-            </span>
-
             {/* h1 на главной — под самый частотный запрос. Текст менять
                 нельзя, а подать его крупнее можно. */}
-            <h1 className="mt-6 text-[2.5rem] leading-[1.05] font-semibold text-brand-900 sm:text-5xl lg:text-[3.75rem]">
+            <h1 className="text-[2.5rem] leading-[1.05] font-semibold text-brand-900 sm:text-5xl lg:text-[3.75rem]">
               Автосвет в Минске:{" "}
               <span className="relative inline-block whitespace-nowrap">
                 линзы
