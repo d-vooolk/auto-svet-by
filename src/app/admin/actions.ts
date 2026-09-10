@@ -194,17 +194,33 @@ export async function saveCategoryAction(
   return ok();
 }
 
-export async function deleteCategoryAction(id: string): Promise<FormState> {
+/**
+ * Удаление раздела. `moveTo` — куда переехать товарам из него.
+ *
+ * Адрес раздела-приёмника берём до удаления: после него getCategoryRaw
+ * вернёт ту же запись, но пересобрать нужно обе страницы — и ту, что
+ * исчезла, и ту, где товаров стало больше.
+ */
+export async function deleteCategoryAction(
+  id: string,
+  moveTo?: string,
+): Promise<FormState> {
   await requireAdmin();
 
   const category = getCategoryRaw(id);
   if (!category) return fail(["Раздел не найден"]);
 
-  const result = deleteCategory(id);
+  const target = moveTo ? getCategoryRaw(moveTo) : null;
+  if (moveTo && !target) return fail(["Раздел, в который переносим товары, не найден"]);
+
+  const result = deleteCategory(id, moveTo);
   if (!result.ok) return toState(result);
 
   invalidateCatalog();
   revalidateCategory(category.slug);
+  // Товары переехали: в приёмнике их стало больше, а на страницах самих
+  // товаров поменялись хлебные крошки.
+  if (target) revalidateCategory(target.slug);
 
   redirect("/admin/categories/");
 }

@@ -1,6 +1,8 @@
 import { bumpCatalogVersion, getDb } from "./db";
+import { pluralize } from "./format";
 import {
   categorySchema,
+  parseOrThrow,
   productSchema,
   siteSchema,
   type Category,
@@ -195,22 +197,62 @@ export function saveCategory(input: unknown, previousId?: string): SaveResult {
  * Удаление раздела. Если в нём есть товары — отказ: молча утащить за собой
  * полсотни позиций страшнее, чем заставить сначала их перенести.
  */
-export function deleteCategory(id: string): SaveResult {
+/**
+ * Удаление раздела.
+ *
+ * `moveTo` — раздел, в который уедут товары. Без него раздел с товарами не
+ * удаляется: товар без существующего раздела пропадает из меню и с витрины,
+ * но остаётся в базе — искать его потом негде.
+ *
+ * Перенос и удаление идут одной транзакцией: если раздел исчезнет, а товары
+ * переехать не успеют, они как раз и окажутся в этом подвешенном состоянии.
+ */
+export function deleteCategory(id: string, moveTo?: string): SaveResult {
   const db = getDb();
-  const row = db
+  const { n } = db
     .prepare("SELECT COUNT(*) AS n FROM products WHERE category_id = ?")
     .get(id) as { n: number };
 
-  if (row.n > 0) {
-    return {
-      ok: false,
-      problems: [
-        `В разделе ещё ${row.n} товар(ов). Перенесите их в другой раздел или удалите — тогда раздел можно будет убрать.`,
-      ],
-    };
+  if (n > 0) {
+    if (!moveTo) {
+      return {
+        ok: false,
+        problems: [
+          `В разделе ещё ${pluralize(n, "товар", "товара", "товаров")}. Укажите, в какой раздел их перенести.`,
+        ],
+      };
+    }
+    if (moveTo === id) {
+      return { ok: false, problems: ["Перенести товары можно только в другой раздел"] };
+    }
+    const target = db
+      .prepare("SELECT id FROM categories WHERE id = ?")
+      .get(moveTo);
+    if (!target) {
+      return { ok: false, problems: ["Раздел, в который переносим товары, не найден"] };
+    }
   }
 
-  db.prepare("DELETE FROM categories WHERE id = ?").run(id);
+  const products = db
+    .prepare("SELECT id, data FROM products WHERE category_id = ?")
+    .all(id) as Array<{ id: string; data: string }>;
+
+  // Правим и колонку, и JSON: по колонке идут выборки, а JSON — источник
+  // правды, из которого страница собирает товар.
+  const move = db.prepare(
+    "UPDATE products SET category_id = ?, data = ?, updated_at = ? WHERE id = ?",
+  );
+  const now = Date.now();
+
+  db.transaction(() => {
+    for (const row of products) {
+      const product = JSON.parse(row.data) as Product;
+      product.categoryId = moveTo!;
+      move.run(moveTo, JSON.stringify(product), now, row.id);
+    }
+    db.prepare("DELETE FROM categories WHERE id = ?").run(id);
+  })();
+
   bumpCatalogVersion();
   return { ok: true };
 }
@@ -370,24 +412,38 @@ export function countOutOfStock(): number {
   ).n;
 }
 
-/** Один товар для формы правки — сырой объект, каким его отдаст страница. */
+/**
+ * Один товар для формы правки — сырой объект, каким его отдаст страница.
+ *
+ * Через схему, а не голым JSON.parse с приведением типа: в схеме у полей
+ * вроде optionGroups и specs стоит .default([]), и тип Product обещает, что
+ * массивы на месте. В базе же лежит ровно то, что записали, — у товара без
+ * опций ключа optionGroups просто нет. Приведение это скрывало, а первый же
+ * обход массива падал с «undefined is not iterable», и форма отдавала 500.
+ */
 export function getProductRaw(id: string): Product | null {
   const row = getDb()
     .prepare("SELECT data FROM products WHERE id = ?")
     .get(id) as { data: string } | undefined;
-  return row ? (JSON.parse(row.data) as Product) : null;
+  return row
+    ? parseOrThrow(productSchema, JSON.parse(row.data), `товар ${id}`)
+    : null;
 }
 
 export function getCategoryRaw(id: string): Category | null {
   const row = getDb()
     .prepare("SELECT data FROM categories WHERE id = ?")
     .get(id) as { data: string } | undefined;
-  return row ? (JSON.parse(row.data) as Category) : null;
+  return row
+    ? parseOrThrow(categorySchema, JSON.parse(row.data), `раздел ${id}`)
+    : null;
 }
 
 export function getSiteRaw(): Site | null {
   const row = getDb()
     .prepare("SELECT value FROM settings WHERE key = 'site'")
     .get() as { value: string } | undefined;
-  return row ? (JSON.parse(row.value) as Site) : null;
+  return row
+    ? parseOrThrow(siteSchema, JSON.parse(row.value), "настройки сайта")
+    : null;
 }

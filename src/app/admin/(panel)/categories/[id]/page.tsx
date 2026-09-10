@@ -18,9 +18,10 @@ export default async function EditCategoryPage({ params }: PageProps) {
   const category = getCategoryRaw(id);
   if (!category) notFound();
 
-  // Сколько товаров внутри — от этого зависит, можно ли раздел удалить.
-  const count =
-    listCategoriesBrief().find((entry) => entry.id === id)?.count ?? 0;
+  // Сколько товаров внутри — от этого зависит, можно ли удалить раздел
+  // сразу или сначала спросить, куда переносить товары.
+  const categories = listCategoriesBrief();
+  const count = categories.find((entry) => entry.id === id)?.count ?? 0;
 
   return (
     <CategoryForm
@@ -28,6 +29,7 @@ export default async function EditCategoryPage({ params }: PageProps) {
       previousId={category.id}
       thumbs={thumbsFor(category.image ? [category.image] : [])}
       productCount={count}
+      categories={categories}
     />
   );
 }

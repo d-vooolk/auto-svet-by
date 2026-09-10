@@ -17,6 +17,7 @@ export default function NewCategoryPage() {
       category={{ id: "", slug: "", name: "", order: nextOrder }}
       thumbs={{}}
       productCount={0}
+      categories={categories}
     />
   );
 }

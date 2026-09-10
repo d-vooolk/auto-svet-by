@@ -19,6 +19,8 @@ interface CategoryFormProps {
   previousId?: string;
   thumbs: Record<string, string>;
   productCount: number;
+  /** Все разделы — из них выбирается тот, куда уедут товары при удалении. */
+  categories: Array<{ id: string; name: string }>;
 }
 
 export function CategoryForm({
@@ -26,6 +28,7 @@ export function CategoryForm({
   previousId,
   thumbs,
   productCount,
+  categories,
 }: CategoryFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -35,6 +38,11 @@ export function CategoryForm({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const creating = !previousId;
+  const others = categories.filter((entry) => entry.id !== previousId);
+  const [moveTo, setMoveTo] = useState(others[0]?.id ?? "");
+  // Товары есть, а переносить некуда — раздел последний. Удалять нельзя:
+  // товары остались бы в базе без раздела, то есть нигде.
+  const nowhereToMove = productCount > 0 && others.length === 0;
 
   const patch = (changes: Partial<Category>) => {
     setDraft((current) => ({ ...current, ...changes }));
@@ -58,7 +66,10 @@ export function CategoryForm({
 
   const remove = () => {
     startTransition(async () => {
-      const result = await deleteCategoryAction(draft.id);
+      const result = await deleteCategoryAction(
+        draft.id,
+        productCount > 0 ? moveTo : undefined,
+      );
       if (result && !result.ok) {
         setProblems(result.problems);
         setConfirmDelete(false);
@@ -217,17 +228,44 @@ export function CategoryForm({
       </Section>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-100 bg-white/95 backdrop-blur">
-        <div className="container-page flex items-center gap-3 py-3">
+        <div className="container-page flex flex-wrap items-center gap-3 py-3">
           {!creating &&
             (confirmDelete ? (
               <>
+                {productCount > 0 && (
+                  <label className="flex items-center gap-2 text-sm text-brand-600">
+                    Перенести{" "}
+                    <Link
+                      href={`/admin/products/?category=${draft.id}`}
+                      target="_blank"
+                      rel="noopener"
+                      className="underline underline-offset-2 hover:text-brand-900"
+                    >
+                      {pluralize(productCount, "товар", "товара", "товаров")}
+                    </Link>{" "}
+                    в
+                    <select
+                      value={moveTo}
+                      onChange={(event) => setMoveTo(event.target.value)}
+                      className="field w-auto py-1.5 text-sm"
+                    >
+                      {others.map((entry) => (
+                        <option key={entry.id} value={entry.id}>
+                          {entry.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 <button
                   type="button"
                   onClick={remove}
-                  disabled={pending}
+                  disabled={pending || (productCount > 0 && !moveTo)}
                   className="btn-primary bg-red-700 py-2 text-sm hover:bg-red-800"
                 >
-                  Да, удалить раздел
+                  {productCount > 0
+                    ? "Перенести и удалить раздел"
+                    : "Да, удалить раздел"}
                 </button>
                 <button
                   type="button"
@@ -242,25 +280,18 @@ export function CategoryForm({
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(true)}
-                  disabled={productCount > 0}
+                  disabled={nowhereToMove}
                   className="btn-ghost py-2 text-sm text-red-700 hover:bg-red-50 disabled:text-brand-300 disabled:hover:bg-transparent"
                 >
                   <TrashIcon className="h-4 w-4" />
                   Удалить
                 </button>
-                {productCount > 0 && (
-                  // Причину пишем рядом с кнопкой, а не в title: события мыши
-                  // до disabled-кнопки не доходят, и подсказку никто не увидит
-                  // — со стороны кнопка выглядит просто сломанной.
+                {nowhereToMove && (
+                  // Причину пишем рядом с кнопкой, а не в title: событий мыши
+                  // disabled-кнопка не получает, и подсказку никто не увидит —
+                  // со стороны она выглядит просто сломанной.
                   <p className="text-xs text-brand-400">
-                    Сначала перенесите{" "}
-                    <Link
-                      href={`/admin/products/?category=${draft.id}`}
-                      className="text-brand-700 underline underline-offset-2 hover:text-brand-900"
-                    >
-                      {pluralize(productCount, "товар", "товара", "товаров")}
-                    </Link>{" "}
-                    в другой раздел
+                    Это единственный раздел — товары из него некуда перенести
                   </p>
                 )}
               </>
