@@ -11,6 +11,7 @@
     "import": "node scripts/import-data.mjs",
     "admin": "node scripts/admin.mjs",
     "backup": "node scripts/backup.mjs",
+    "icons": "node scripts/make-icons.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint",
