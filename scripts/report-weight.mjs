@@ -2,7 +2,10 @@
 /**
  * Сколько на самом деле весит страница.
  *
- * Запускать после сборки:  npm run weight
+ * Запускать против работающего сервера:
+ *
+ *   npm run build && npm start     (в одном окне)
+ *   npm run weight                 (в другом)
  *
  * Считает то, что реально скачает браузер при первом заходе: HTML плюс те
  * файлы CSS и JS, которые в этом HTML упомянуты. Отдельно показывает размер
@@ -11,27 +14,23 @@
  *
  * Ориентиры: до 100 КБ после сжатия — быстро на мобильном интернете,
  * 100–200 КБ — терпимо, выше — стоит разбираться.
+ *
+ * Раньше скрипт считал файлы в out/. Статического экспорта больше нет,
+ * поэтому и HTML, и ассеты берём у сервера по HTTP.
  */
 
-import fs from "node:fs";
-import path from "node:path";
 import { gzipSync } from "node:zlib";
 
-const OUT = path.join(process.cwd(), "out");
-
-if (!fs.existsSync(OUT)) {
-  console.error("Сначала соберите сайт: npm run build");
-  process.exit(1);
-}
+const BASE = (process.env.SITE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
 
 const PAGES = [
-  ["Главная", "index.html"],
-  ["Каталог целиком", "catalog/index.html"],
-  ["Категория «Лампы»", "catalog/lampy/index.html"],
-  ["Товар с опциями", "product/osram-night-breaker-200/index.html"],
-  ["Товар без опций", "product/osram-original-line-h7/index.html"],
-  ["Корзина", "cart/index.html"],
-  ["Доставка и оплата", "delivery/index.html"],
+  ["Главная", "/"],
+  ["Каталог целиком", "/catalog/"],
+  ["Категория «Лампы»", "/catalog/lampy/"],
+  ["Товар с опциями", "/product/osram-night-breaker-200/"],
+  ["Товар без опций", "/product/osram-original-line-h7/"],
+  ["Корзина", "/cart/"],
+  ["Доставка и оплата", "/delivery/"],
 ];
 
 function kb(bytes) {
@@ -40,6 +39,28 @@ function kb(bytes) {
 
 function gz(buffer) {
   return gzipSync(buffer, { level: 6 }).length;
+}
+
+/**
+ * Тело ответа сырыми байтами. Просим identity: нас интересует исходный
+ * размер, сжимать мы будем сами и одинаковым уровнем для всех файлов.
+ */
+async function fetchBytes(url) {
+  const response = await fetch(BASE + url, {
+    headers: { "Accept-Encoding": "identity" },
+  });
+  if (!response.ok) return null;
+  return Buffer.from(await response.arrayBuffer());
+}
+
+try {
+  await fetch(BASE + "/");
+} catch {
+  console.error(
+    `Сайт не отвечает на ${BASE}\n` +
+      "Запустите его в соседнем окне: npm run build && npm start",
+  );
+  process.exit(1);
 }
 
 console.log(
@@ -53,16 +74,24 @@ console.log(
 );
 console.log("-".repeat(62));
 
+// Один и тот же чанк встречается на нескольких страницах — качаем его
+// один раз, иначе отчёт по семи страницам это семь скачиваний рантайма.
+const assetCache = new Map();
+
+async function asset(url) {
+  if (!assetCache.has(url)) assetCache.set(url, await fetchBytes(url));
+  return assetCache.get(url);
+}
+
 let worst = 0;
 
-for (const [label, relative] of PAGES) {
-  const file = path.join(OUT, relative);
-  if (!fs.existsSync(file)) {
-    console.log(`${label.padEnd(22)}  нет файла ${relative}`);
+for (const [label, url] of PAGES) {
+  const html = await fetchBytes(url);
+  if (!html) {
+    console.log(`${label.padEnd(22)}  не открылась: ${url}`);
     continue;
   }
 
-  const html = fs.readFileSync(file);
   const text = html.toString("utf8");
 
   // Ресурсы, на которые ссылается сама страница.
@@ -81,18 +110,17 @@ for (const [label, relative] of PAGES) {
   const assets = new Set(
     [...text.matchAll(/(?:src|href)="(\/_next\/static\/[^"]+\.(?:js|css))"/g)]
       .map((match) => match[1])
-      .filter((asset) => !skipped.has(asset)),
+      .filter((item) => !skipped.has(item)),
   );
 
   let js = 0;
   let css = 0;
   let compressed = gz(html);
 
-  for (const asset of assets) {
-    const assetFile = path.join(OUT, asset);
-    if (!fs.existsSync(assetFile)) continue;
-    const buffer = fs.readFileSync(assetFile);
-    if (asset.endsWith(".js")) js += buffer.length;
+  for (const item of assets) {
+    const buffer = await asset(item);
+    if (!buffer) continue;
+    if (item.endsWith(".js")) js += buffer.length;
     else css += buffer.length;
     compressed += gz(buffer);
   }

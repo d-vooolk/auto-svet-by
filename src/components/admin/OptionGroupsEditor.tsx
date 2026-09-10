@@ -53,14 +53,14 @@ export function OptionGroupsEditor({
   return (
     <div className="space-y-4">
       {value.length === 0 && (
-        <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-500">
           Опций нет — товар продаётся в одном исполнении по цене выше.
         </p>
       )}
 
       {value.map((group, groupIndex) => (
-        <div key={groupIndex} className="rounded-card border border-slate-200">
-          <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 bg-slate-50 p-3">
+        <div key={groupIndex} className="rounded-card border border-brand-100">
+          <div className="flex flex-wrap items-end gap-3 border-b border-brand-100 bg-brand-50 p-3">
             <label className="min-w-0 flex-1">
               <span className="label mb-1 text-xs">Название набора</span>
               <input
@@ -124,11 +124,11 @@ export function OptionGroupsEditor({
           </div>
 
           {groupIndex === 0 ? (
-            <p className="border-b border-slate-100 px-3 py-2 text-xs text-slate-500">
+            <p className="border-b border-brand-100 px-3 py-2 text-xs text-brand-400">
               Первый набор задаёт цену: у его значений указывайте цену целиком.
             </p>
           ) : (
-            <p className="border-b border-slate-100 px-3 py-2 text-xs text-slate-500">
+            <p className="border-b border-brand-100 px-3 py-2 text-xs text-brand-400">
               Во втором и следующих наборах указывайте надбавку — она
               прибавляется к цене из первого набора.
             </p>
@@ -206,7 +206,7 @@ function ValuesEditor({
   };
 
   return (
-    <div className="divide-y divide-slate-100">
+    <div className="divide-y divide-brand-100">
       {values.map((item, index) => {
         const open = expanded === index;
         const price =
@@ -248,7 +248,7 @@ function ValuesEditor({
               />
 
               <label className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-brand-400">
                   {isFirstGroup ? "цена" : "надбавка"}
                 </span>
                 {isFirstGroup ? (
@@ -283,7 +283,7 @@ function ValuesEditor({
                     className="field tnum w-24 py-1.5 text-sm"
                   />
                 )}
-                <span className="text-xs text-slate-400">{currencySymbol}</span>
+                <span className="text-xs text-brand-300">{currencySymbol}</span>
               </label>
 
               <label
@@ -298,13 +298,13 @@ function ValuesEditor({
                       inStock: event.target.checked ? undefined : false,
                     })
                   }
-                  className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-600"
+                  className="h-4 w-4 rounded border-brand-200 text-brand-700 focus:ring-brand-600"
                 />
-                <span className="text-xs text-slate-600">в наличии</span>
+                <span className="text-xs text-brand-500">в наличии</span>
               </label>
 
               {item.images?.length ? (
-                <span className="badge bg-slate-100 text-slate-600">
+                <span className="badge bg-brand-50 text-brand-500">
                   {item.images.length} фото
                 </span>
               ) : null}
@@ -344,7 +344,7 @@ function ValuesEditor({
 
             {/* -------------------- Развёрнутые детали ------------------- */}
             {open && (
-              <div className="space-y-4 border-t border-slate-100 bg-slate-50/60 p-4">
+              <div className="space-y-4 border-t border-brand-100 bg-brand-50/60 p-4">
                 <div className="grid gap-3 sm:grid-cols-3">
                   <label className="block">
                     <span className="label mb-1 text-xs">Код значения</span>
@@ -355,7 +355,7 @@ function ValuesEditor({
                       }
                       className="field py-2 text-sm"
                     />
-                    <span className="mt-1 block text-xs text-slate-500">
+                    <span className="mt-1 block text-xs text-brand-400">
                       Входит в ключ корзины — после запуска не меняйте
                     </span>
                   </label>
@@ -404,9 +404,9 @@ function ValuesEditor({
                 />
 
                 {isFirstGroup && price !== undefined && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-brand-400">
                     Итоговая цена варианта:{" "}
-                    <b className="tnum text-slate-700">
+                    <b className="tnum text-brand-600">
                       {price} {currencySymbol}
                     </b>{" "}
                     плюс надбавки из остальных наборов.

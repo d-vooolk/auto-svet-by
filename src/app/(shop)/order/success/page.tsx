@@ -24,25 +24,25 @@ export default function OrderSuccessPage() {
           <CheckIcon className="h-8 w-8 text-green-700" />
         </span>
 
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl">
           Заказ принят
         </h1>
-        <p className="mt-4 text-base leading-relaxed text-slate-600">
+        <p className="mt-4 text-base leading-relaxed text-brand-500">
           Заявка уже у менеджера. Он перезвонит в рабочее время, подтвердит
           наличие выбранных вариантов и согласует доставку. Ничего оплачивать
           сейчас не нужно.
         </p>
 
-        <div className="mt-8 rounded-card border border-slate-200 bg-slate-50 p-5 text-left">
-          <p className="text-sm font-semibold text-slate-900">
+        <div className="mt-8 rounded-card border border-brand-100 bg-brand-50 p-5 text-left">
+          <p className="text-sm font-semibold text-brand-900">
             Что дальше
           </p>
-          <ol className="mt-2.5 space-y-2 text-sm text-slate-700">
+          <ol className="mt-2.5 space-y-2 text-sm text-brand-600">
             <li>1. Менеджер звонит и подтверждает состав заказа.</li>
             <li>2. Согласуем время доставки или самовывоза.</li>
             <li>3. Оплата наличными или картой при получении.</li>
           </ol>
-          <p className="mt-4 text-xs text-slate-500">{site.workHours}</p>
+          <p className="mt-4 text-xs text-brand-400">{site.workHours}</p>
         </div>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
@@ -55,7 +55,7 @@ export default function OrderSuccessPage() {
           </a>
         </div>
 
-        <p className="mt-6 text-sm text-slate-500">
+        <p className="mt-6 text-sm text-brand-400">
           Не дождались звонка? Напишите нам{" "}
           {site.telegram ? (
             <a

@@ -19,7 +19,7 @@ export function CartLines({
   const remove = useCart((state) => state.remove);
 
   return (
-    <ul className="card divide-y divide-slate-100">
+    <ul className="card divide-y divide-brand-100">
       {items.map((line) => (
         <li key={line.key} className="flex gap-4 p-4">
           <Link
@@ -43,28 +43,28 @@ export function CartLines({
           <div className="min-w-0 flex-1">
             <Link
               href={`/product/${line.slug}/`}
-              className="text-[15px] leading-snug font-semibold text-slate-900 hover:text-brand-700"
+              className="text-[15px] leading-snug font-semibold text-brand-900 hover:text-brand-700"
             >
               {line.title}
             </Link>
 
             {line.options.length > 0 && (
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-brand-400">
                 {line.options
                   .map((option) => `${option.groupName}: ${option.label}`)
                   .join(" · ")}
               </p>
             )}
             {line.unit && (
-              <p className="mt-0.5 text-xs text-slate-500">за {line.unit}</p>
+              <p className="mt-0.5 text-xs text-brand-400">за {line.unit}</p>
             )}
 
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center rounded-xl border border-slate-300">
+              <div className="flex items-center rounded-xl border border-brand-200">
                 <button
                   type="button"
                   onClick={() => setQty(line.key, line.qty - 1)}
-                  className="p-2.5 text-slate-600 hover:text-slate-900"
+                  className="p-2.5 text-brand-500 hover:text-brand-900"
                   aria-label={`Уменьшить количество: ${line.title}`}
                 >
                   <MinusIcon className="h-3.5 w-3.5" />
@@ -75,7 +75,7 @@ export function CartLines({
                 <button
                   type="button"
                   onClick={() => setQty(line.key, line.qty + 1)}
-                  className="p-2.5 text-slate-600 hover:text-slate-900"
+                  className="p-2.5 text-brand-500 hover:text-brand-900"
                   aria-label={`Увеличить количество: ${line.title}`}
                 >
                   <PlusIcon className="h-3.5 w-3.5" />
@@ -84,11 +84,11 @@ export function CartLines({
 
               <div className="flex items-center gap-3">
                 <span className="text-right">
-                  <span className="tnum block text-base font-bold text-slate-900">
+                  <span className="tnum block text-base font-bold text-brand-900">
                     {formatPrice(line.price * line.qty, currencySymbol)}
                   </span>
                   {line.qty > 1 && (
-                    <span className="tnum block text-xs text-slate-500">
+                    <span className="tnum block text-xs text-brand-400">
                       {formatPrice(line.price, currencySymbol)} × {line.qty}
                     </span>
                   )}
@@ -96,7 +96,7 @@ export function CartLines({
                 <button
                   type="button"
                   onClick={() => remove(line.key)}
-                  className="rounded-xl p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  className="rounded-xl p-2 text-brand-300 hover:bg-red-50 hover:text-red-600"
                   aria-label={`Удалить из корзины: ${line.title}`}
                 >
                   <TrashIcon className="h-4 w-4" />

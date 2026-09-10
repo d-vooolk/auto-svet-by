@@ -47,10 +47,10 @@ export default function CatalogPage() {
       <JsonLd data={itemListJsonLd(products, "/catalog/")} />
 
       <header className="mb-6">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+        <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl">
           Каталог автосвета
         </h1>
-        <p className="mt-2.5 max-w-2xl text-base text-slate-600">
+        <p className="mt-2.5 max-w-2xl text-base text-brand-500">
           {pluralize(products.length, "позиция", "позиции", "позиций")} в{" "}
           {pluralize(categories.length, "разделе", "разделах", "разделах")}.
           Подберём комплект под вашу модель — напишите её в комментарии к заказу.
@@ -63,10 +63,10 @@ export default function CatalogPage() {
           <Link
             key={category.id}
             href={`/catalog/${category.slug}/`}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 transition-colors hover:border-brand-600 hover:text-brand-700"
+            className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-800 transition-colors hover:border-brand-600 hover:text-brand-700"
           >
             {category.name}
-            <span className="tnum text-xs text-slate-400">
+            <span className="tnum text-xs text-brand-300">
               {counts[category.id] ?? 0}
             </span>
           </Link>

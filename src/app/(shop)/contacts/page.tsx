@@ -26,10 +26,10 @@ export default function ContactsPage() {
       <JsonLd data={organizationJsonLd()} />
 
       <header className="mb-9 max-w-2xl">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+        <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl">
           Контакты
         </h1>
-        <p className="mt-3 text-base text-slate-600">
+        <p className="mt-3 text-base text-brand-500">
           Звоните или пишите — поможем подобрать линзы, лампы или стекло под
           вашу модель автомобиля.
         </p>
@@ -37,13 +37,13 @@ export default function ContactsPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <div className="card p-5">
-          <h2 className="mb-3 flex items-center gap-2.5 text-lg font-bold text-slate-900">
+          <h2 className="mb-3 flex items-center gap-2.5 text-lg font-bold text-brand-900">
             <PhoneIcon className="h-5 w-5 text-brand-700" />
             Связаться
           </h2>
           <a
             href={`tel:${site.phoneHref}`}
-            className="tnum block text-xl font-extrabold text-slate-900 hover:text-brand-700"
+            className="tnum block text-xl font-semibold text-brand-900 hover:text-brand-700"
           >
             {site.phone}
           </a>
@@ -77,29 +77,29 @@ export default function ContactsPage() {
         </div>
 
         <div className="card p-5">
-          <h2 className="mb-3 text-lg font-bold text-slate-900">Адрес</h2>
-          <address className="text-sm leading-relaxed text-slate-700 not-italic">
+          <h2 className="mb-3 text-lg font-bold text-brand-900">Адрес</h2>
+          <address className="text-sm leading-relaxed text-brand-600 not-italic">
             {site.address.postalCode}, {site.address.city}
             <br />
             {site.address.street}
           </address>
-          <p className="mt-3 text-sm text-slate-600">{site.workHours}</p>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-sm text-brand-500">{site.workHours}</p>
+          <p className="mt-3 text-xs text-brand-400">
             Самовывоз бесплатный. Заказ храним 3 дня.
           </p>
         </div>
 
         <div className="card p-5">
-          <h2 className="mb-3 flex items-center gap-2.5 text-lg font-bold text-slate-900">
+          <h2 className="mb-3 flex items-center gap-2.5 text-lg font-bold text-brand-900">
             <TruckIcon className="h-5 w-5 text-brand-700" />
             Доставка
           </h2>
-          <ul className="space-y-2.5 text-sm text-slate-700">
+          <ul className="space-y-2.5 text-sm text-brand-600">
             {site.delivery.methods.map((method) => (
               <li key={method.id}>
                 <span className="font-semibold">{method.name}</span>
                 {method.note && (
-                  <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">
+                  <span className="mt-0.5 block text-xs leading-relaxed text-brand-400">
                     {method.note}
                   </span>
                 )}
@@ -110,7 +110,7 @@ export default function ContactsPage() {
       </div>
 
       <section className="prose-shop mt-12 max-w-3xl">
-        <h2 className="mb-3 text-xl font-bold text-slate-900">
+        <h2 className="mb-3 text-xl font-semibold text-brand-900">
           Как мы помогаем с подбором
         </h2>
         <p>

@@ -54,7 +54,7 @@ export function ProductRow({
     <div
       className={`flex items-center gap-3 px-3 py-2.5 transition-opacity sm:px-4 ${
         pending ? "opacity-60" : ""
-      } ${inStock ? "" : "bg-slate-50"}`}
+      } ${inStock ? "" : "bg-brand-50"}`}
     >
       <div className="photo-bed h-12 w-12 shrink-0 overflow-hidden rounded-lg">
         {thumb ? (
@@ -68,7 +68,7 @@ export function ProductRow({
             className="h-full w-full object-contain"
           />
         ) : (
-          <span className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
+          <span className="flex h-full w-full items-center justify-center text-[10px] text-brand-300">
             нет фото
           </span>
         )}
@@ -77,18 +77,18 @@ export function ProductRow({
       <div className="min-w-0 flex-1">
         <Link
           href={`/admin/products/${product.id}/`}
-          className="block truncate text-sm font-semibold text-slate-900 hover:text-brand-700"
+          className="block truncate text-sm font-semibold text-brand-900 hover:text-brand-700"
         >
           {product.title}
         </Link>
-        <p className="truncate text-xs text-slate-500">
+        <p className="truncate text-xs text-brand-400">
           {categoryName}
           {product.brand ? ` · ${product.brand}` : ""} · /{product.slug}/
         </p>
         {error && <p className="mt-0.5 text-xs text-red-600">{error}</p>}
       </div>
 
-      <p className="tnum hidden shrink-0 text-sm font-semibold text-slate-900 sm:block">
+      <p className="tnum hidden shrink-0 text-sm font-semibold text-brand-900 sm:block">
         {formatPrice(product.price, currencySymbol)}
       </p>
 
@@ -137,7 +137,7 @@ function Toggle({ label, short, active, onChange, activeClass }: ToggleProps) {
       aria-pressed={active}
       title={label}
       className={`rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${
-        active ? activeClass : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+        active ? activeClass : "bg-brand-50 text-brand-300 hover:bg-brand-100"
       }`}
     >
       {short}

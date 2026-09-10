@@ -95,7 +95,7 @@ export function ProductForm({
         <Link href="/admin/products/" className="btn-ghost py-2 text-sm">
           ← К списку
         </Link>
-        <h1 className="text-xl font-extrabold text-slate-900">
+        <h1 className="text-xl font-semibold text-brand-900">
           {creating ? "Новый товар" : draft.title || "Без названия"}
         </h1>
         {!creating && (
@@ -103,7 +103,7 @@ export function ProductForm({
             href={`/product/${draft.slug}/`}
             target="_blank"
             rel="noopener"
-            className="text-xs text-slate-500 hover:text-slate-800"
+            className="text-xs text-brand-400 hover:text-brand-800"
           >
             Открыть на сайте ↗
           </Link>
@@ -254,7 +254,7 @@ export function ProductForm({
               value={draft.slug}
               onChange={(event) => patch({ slug: toSlug(event.target.value) })}
               disabled={!creating}
-              className="field disabled:bg-slate-100 disabled:text-slate-500"
+              className="field disabled:bg-brand-50 disabled:text-brand-400"
             />
           </Field>
 
@@ -263,7 +263,7 @@ export function ProductForm({
               value={draft.id}
               onChange={(event) => patch({ id: toSlug(event.target.value) })}
               disabled={!creating}
-              className="field disabled:bg-slate-100 disabled:text-slate-500"
+              className="field disabled:bg-brand-50 disabled:text-brand-400"
             />
           </Field>
         </div>
@@ -372,7 +372,7 @@ export function ProductForm({
       </Section>
 
       {/* ------------------------ Панель снизу ----------------------- */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-100 bg-white/95 backdrop-blur">
         <div className="container-page flex items-center gap-3 py-3">
           {!creating && (
             <>
@@ -501,11 +501,11 @@ function Checkbox({
         type="checkbox"
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
-        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-600"
+        className="mt-0.5 h-4 w-4 rounded border-brand-200 text-brand-700 focus:ring-brand-600"
       />
       <span>
-        <span className="block text-sm font-medium text-slate-900">{label}</span>
-        {hint && <span className="block text-xs text-slate-500">{hint}</span>}
+        <span className="block text-sm font-medium text-brand-900">{label}</span>
+        {hint && <span className="block text-xs text-brand-400">{hint}</span>}
       </span>
     </label>
   );

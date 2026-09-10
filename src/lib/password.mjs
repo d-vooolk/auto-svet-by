@@ -75,8 +75,8 @@ export function verifyPassword(password, stored) {
  * спецсимволы.
  */
 export function checkPasswordStrength(password) {
-  if (password.length < 10) {
-    return "Пароль должен быть не короче 10 символов";
+  if (password.length < 9) {
+    return "Пароль должен быть не короче 9 символов";
   }
   if (/^\d+$/.test(password)) {
     return "Пароль из одних цифр подбирается за минуты — добавьте буквы";

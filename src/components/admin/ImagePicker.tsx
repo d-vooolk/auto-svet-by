@@ -119,20 +119,20 @@ export function ImagePicker({
     <div>
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
         <span className="label mb-0">{label}</span>
-        <span className="tnum text-xs text-slate-400">
+        <span className="tnum text-xs text-brand-300">
           {value.length}
           {max > 1 ? ` / ${max}` : ""}
         </span>
       </div>
 
-      {hint && <p className="mb-2 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mb-2 text-xs text-brand-400">{hint}</p>}
 
       {value.length > 0 && (
         <ul className="mb-2 flex flex-wrap gap-2">
           {value.map((path, index) => (
             <li
               key={path}
-              className="group relative h-20 w-20 overflow-hidden rounded-xl border border-slate-200"
+              className="group relative h-20 w-20 overflow-hidden rounded-xl border border-brand-100"
             >
               <img
                 src={known[path] ?? guessThumb(path)}
@@ -157,7 +157,7 @@ export function ImagePicker({
               </button>
 
               {max > 1 && value.length > 1 && (
-                <span className="absolute right-0 bottom-0 left-0 flex justify-between bg-slate-900/70 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                <span className="absolute right-0 bottom-0 left-0 flex justify-between bg-brand-900/70 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
                   <button
                     type="button"
                     onClick={() => move(index, index - 1)}
@@ -322,10 +322,10 @@ function MediaBrowser({ exclude, limit, onPick, onClose }: MediaBrowserProps) {
     );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-900/50 p-4">
       <div className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-card bg-white shadow-xl">
-        <div className="flex items-center gap-3 border-b border-slate-200 p-4">
-          <h2 className="text-sm font-bold text-slate-900">Загруженные фото</h2>
+        <div className="flex items-center gap-3 border-b border-brand-100 p-4">
+          <h2 className="text-sm font-bold text-brand-900">Загруженные фото</h2>
           <input
             type="search"
             value={query}
@@ -342,14 +342,14 @@ function MediaBrowser({ exclude, limit, onPick, onClose }: MediaBrowserProps) {
           {error && <p className="text-sm text-red-700">{error}</p>}
 
           {!items && !error && (
-            <p className="flex items-center gap-2 text-sm text-slate-500">
+            <p className="flex items-center gap-2 text-sm text-brand-400">
               <SpinnerIcon className="h-4 w-4 animate-spin" />
               Загружаем список…
             </p>
           )}
 
           {items && visible.length === 0 && (
-            <p className="py-8 text-center text-sm text-slate-500">
+            <p className="py-8 text-center text-sm text-brand-400">
               {items.length === 0
                 ? "Загруженных фотографий пока нет."
                 : "Ничего не нашлось."}
@@ -366,7 +366,7 @@ function MediaBrowser({ exclude, limit, onPick, onClose }: MediaBrowserProps) {
                     onClick={() => toggle(item.path)}
                     title={item.path}
                     className={`block w-full overflow-hidden rounded-xl border-2 transition-colors ${
-                      active ? "border-brand-600" : "border-transparent hover:border-slate-300"
+                      active ? "border-brand-600" : "border-transparent hover:border-brand-200"
                     }`}
                   >
                     <img
@@ -374,7 +374,7 @@ function MediaBrowser({ exclude, limit, onPick, onClose }: MediaBrowserProps) {
                       alt={item.path}
                       className="photo-bed aspect-square w-full object-contain"
                     />
-                    <span className="block truncate px-1 py-1 text-[10px] text-slate-500">
+                    <span className="block truncate px-1 py-1 text-[10px] text-brand-400">
                       {item.path}
                     </span>
                   </button>
@@ -384,8 +384,8 @@ function MediaBrowser({ exclude, limit, onPick, onClose }: MediaBrowserProps) {
           </ul>
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-slate-200 p-4">
-          <p className="text-xs text-slate-500">
+        <div className="flex items-center justify-between gap-3 border-t border-brand-100 p-4">
+          <p className="text-xs text-brand-400">
             Выбрано {selected.length} из возможных {limit}
           </p>
           <div className="flex gap-2">

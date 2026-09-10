@@ -77,7 +77,7 @@ export function SearchBox({ currencySymbol }: { currencySymbol: string }) {
   return (
     <div ref={rootRef} className="relative w-full">
       <div className="relative">
-        <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 h-5 w-5 -translate-y-1/2 text-slate-400" />
+        <SearchIcon className="pointer-events-none absolute top-1/2 left-3.5 h-5 w-5 -translate-y-1/2 text-brand-300" />
         <input
           ref={inputRef}
           type="search"
@@ -101,7 +101,7 @@ export function SearchBox({ currencySymbol }: { currencySymbol: string }) {
           onKeyDown={handleKeyDown}
         />
         {loading && (
-          <SpinnerIcon className="absolute top-1/2 right-3.5 h-5 w-5 -translate-y-1/2 animate-spin text-slate-400" />
+          <SpinnerIcon className="absolute top-1/2 right-3.5 h-5 w-5 -translate-y-1/2 animate-spin text-brand-300" />
         )}
         {!loading && query && (
           <button
@@ -110,7 +110,7 @@ export function SearchBox({ currencySymbol }: { currencySymbol: string }) {
               setQuery("");
               inputRef.current?.focus();
             }}
-            className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded-lg p-1.5 text-brand-300 hover:bg-brand-50 hover:text-brand-500"
             aria-label="Очистить поиск"
           >
             <CloseIcon className="h-4 w-4" />
@@ -122,16 +122,16 @@ export function SearchBox({ currencySymbol }: { currencySymbol: string }) {
         <div
           id={listId}
           role="listbox"
-          className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+          className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-xl border border-brand-100 bg-white shadow-xl"
         >
           {results.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-slate-500">
+            <p className="px-4 py-6 text-center text-sm text-brand-400">
               {index === null
                 ? "Загружаем каталог…"
                 : "Ничего не нашли. Попробуйте короче — например «H7» или «линзы»."}
             </p>
           ) : (
-            <ul className="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto">
+            <ul className="max-h-[70vh] divide-y divide-brand-100 overflow-y-auto">
               {results.map((entry, position) => (
                 <li key={entry.s} role="option" aria-selected={position === active}>
                   <Link
@@ -139,7 +139,7 @@ export function SearchBox({ currencySymbol }: { currencySymbol: string }) {
                     onClick={() => setOpen(false)}
                     onMouseEnter={() => setActive(position)}
                     className={`flex items-center gap-3 px-3 py-2.5 ${
-                      position === active ? "bg-brand-50" : "hover:bg-slate-50"
+                      position === active ? "bg-brand-50" : "hover:bg-brand-50"
                     }`}
                   >
                     <span className="photo-bed flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg">
@@ -153,19 +153,19 @@ export function SearchBox({ currencySymbol }: { currencySymbol: string }) {
                           className="h-full w-full object-contain p-1"
                         />
                       ) : (
-                        <SearchIcon className="h-4 w-4 text-slate-400" />
+                        <SearchIcon className="h-4 w-4 text-brand-300" />
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-slate-900">
+                      <span className="block truncate text-sm font-medium text-brand-900">
                         {entry.t}
                       </span>
-                      <span className="block truncate text-xs text-slate-500">
+                      <span className="block truncate text-xs text-brand-400">
                         {entry.c}
                         {entry.a ? "" : " · нет в наличии"}
                       </span>
                     </span>
-                    <span className="tnum shrink-0 text-sm font-semibold text-slate-900">
+                    <span className="tnum shrink-0 text-sm font-semibold text-brand-900">
                       {formatPrice(entry.p, currencySymbol)}
                     </span>
                   </Link>

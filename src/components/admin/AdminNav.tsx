@@ -48,7 +48,7 @@ export function AdminNav({ siteName, login, newOrders }: AdminNavProps) {
         className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
           active
             ? "bg-brand-700 text-white"
-            : "text-slate-700 hover:bg-slate-200"
+            : "text-brand-600 hover:bg-brand-100"
         }`}
       >
         {link.label}
@@ -66,9 +66,9 @@ export function AdminNav({ siteName, login, newOrders }: AdminNavProps) {
   });
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b border-brand-100 bg-white/95 backdrop-blur">
       <div className="container-page flex h-14 items-center gap-3">
-        <Link href="/admin/" className="shrink-0 text-sm font-extrabold text-slate-900">
+        <Link href="/admin/" className="shrink-0 text-sm font-semibold text-brand-900">
           {siteName}
         </Link>
 
@@ -79,11 +79,11 @@ export function AdminNav({ siteName, login, newOrders }: AdminNavProps) {
             href="/"
             target="_blank"
             rel="noopener"
-            className="hidden text-xs text-slate-500 hover:text-slate-800 sm:inline"
+            className="hidden text-xs text-brand-400 hover:text-brand-800 sm:inline"
           >
             Открыть сайт ↗
           </a>
-          <span className="hidden text-xs text-slate-400 sm:inline">{login}</span>
+          <span className="hidden text-xs text-brand-300 sm:inline">{login}</span>
           <form action={logoutAction}>
             <button type="submit" className="btn-ghost px-3 py-1.5 text-xs">
               Выйти
@@ -106,7 +106,7 @@ export function AdminNav({ siteName, login, newOrders }: AdminNavProps) {
       </div>
 
       {open && (
-        <nav className="container-page grid gap-1 border-t border-slate-200 py-3 lg:hidden">
+        <nav className="container-page grid gap-1 border-t border-brand-100 py-3 lg:hidden">
           {links}
         </nav>
       )}

@@ -85,11 +85,11 @@ export default async function CategoryPage({ params }: PageProps) {
       <JsonLd data={itemListJsonLd(products, `/catalog/${category.slug}/`)} />
 
       <header className="mb-8">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+        <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl">
           {category.name}
         </h1>
         {category.excerpt && (
-          <p className="mt-2.5 max-w-2xl text-base text-slate-600">
+          <p className="mt-2.5 max-w-2xl text-base text-brand-500">
             {category.excerpt}
           </p>
         )}
@@ -97,10 +97,10 @@ export default async function CategoryPage({ params }: PageProps) {
 
       {products.length === 0 ? (
         <div className="card p-10 text-center">
-          <p className="text-base font-semibold text-slate-900">
+          <p className="text-base font-semibold text-brand-900">
             В этом разделе пока нет товаров
           </p>
-          <p className="mt-1.5 text-sm text-slate-600">
+          <p className="mt-1.5 text-sm text-brand-500">
             Позвоните — скажем, что есть в наличии под заказ.
           </p>
         </div>
@@ -125,8 +125,8 @@ export default async function CategoryPage({ params }: PageProps) {
       {/* Текст под сеткой, а не над ней: пользователю нужны товары сразу,
           а поисковику всё равно, где на странице лежит описание раздела. */}
       {category.description && (
-        <section className="prose-shop mt-14 max-w-3xl border-t border-slate-200 pt-10">
-          <h2 className="mb-3 text-xl font-bold text-slate-900">
+        <section className="prose-shop mt-14 max-w-3xl border-t border-brand-100 pt-10">
+          <h2 className="mb-3 text-xl font-semibold text-brand-900">
             О разделе «{category.name}»
           </h2>
           {category.description.split("\n\n").map((paragraph, index) => (

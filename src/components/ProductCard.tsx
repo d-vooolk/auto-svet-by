@@ -44,7 +44,7 @@ export function ProductCard({
   const variant = resolveVariant(product, defaultSelection(product));
 
   return (
-    <article className="group card flex w-full flex-col overflow-hidden transition-shadow duration-200 hover:shadow-card-hover">
+    <article className="group card card-link reveal flex w-full flex-col overflow-hidden">
       <Link
         href={href}
         className="photo-bed relative block aspect-square overflow-hidden"
@@ -56,40 +56,40 @@ export function ProductCard({
           alt=""
           sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 280px"
           priority={priority}
-          className="h-full w-full object-contain p-4 transition-transform duration-300 group-hover:scale-[1.04]"
+          className="h-full w-full object-contain p-5 transition-transform duration-300 ease-out group-hover:scale-[1.03]"
         />
         {product.badge && inStock && (
-          <span className="badge absolute top-3 left-3 bg-accent-500 text-slate-900">
+          <span className="badge absolute top-3 left-3 bg-accent-400 text-brand-900">
             {product.badge}
           </span>
         )}
         {range.varies === false && product.oldPrice && product.oldPrice > range.max && (
-          <span className="badge absolute top-3 right-3 bg-red-600 text-white">
+          <span className="badge absolute top-3 right-3 bg-red-500 text-white">
             −{Math.round((1 - range.max / product.oldPrice) * 100)}%
           </span>
         )}
         {!inStock && (
-          <span className="badge absolute top-3 left-3 bg-slate-700 text-white">
+          <span className="badge absolute top-3 left-3 bg-brand-800/90 text-white backdrop-blur">
             Нет в наличии
           </span>
         )}
       </Link>
 
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-4 pt-3.5">
         {product.brand && (
-          <p className="mb-1 text-xs font-medium tracking-wide text-slate-500 uppercase">
+          <p className="mb-1.5 text-[11px] font-semibold tracking-[0.1em] text-brand-300 uppercase">
             {product.brand}
           </p>
         )}
 
-        <h3 className="mb-2 text-[15px] leading-snug font-semibold text-slate-900">
-          <Link href={href} className="hover:text-brand-700">
+        <h3 className="mb-2 text-[15px] leading-snug font-semibold text-brand-900">
+          <Link href={href} className="transition-colors hover:text-brand-500">
             {product.title}
           </Link>
         </h3>
 
         {hasOptions && (
-          <p className="mb-2 line-clamp-1 text-xs text-slate-500">
+          <p className="mb-2 line-clamp-1 text-xs text-brand-400">
             {product.optionGroups
               .map(
                 (group) =>
@@ -103,16 +103,16 @@ export function ProductCard({
             выравниваются по нижнему краю независимо от длины названия. */}
         <div className="mt-auto pt-2">
           <div className="mb-3 flex items-baseline gap-2">
-            <span className="tnum text-lg font-bold text-slate-900">
+            <span className="tnum text-lg font-semibold text-brand-900">
               {range.varies && (
-                <span className="mr-1 text-sm font-medium text-slate-500">
+                <span className="mr-1 text-sm font-normal text-brand-400">
                   от
                 </span>
               )}
               {formatPrice(range.min, currencySymbol)}
             </span>
             {!range.varies && product.oldPrice && product.oldPrice > range.max && (
-              <span className="tnum text-sm text-slate-400 line-through">
+              <span className="tnum text-sm text-brand-300 line-through">
                 {formatPrice(product.oldPrice, currencySymbol)}
               </span>
             )}

@@ -144,17 +144,17 @@ export function CatalogControls({
           className={`${panelOpen ? "mt-3 block" : "hidden"} lg:sticky lg:top-36 lg:block`}
           aria-label="Фильтры каталога"
         >
-          <div className="card divide-y divide-slate-100">
+          <div className="card divide-y divide-brand-100">
             {brands.length > 1 && (
               <fieldset className="p-4">
-                <legend className="mb-2.5 text-sm font-semibold text-slate-900">
+                <legend className="mb-2.5 text-sm font-semibold text-brand-900">
                   Бренд
                 </legend>
                 <div className="space-y-2">
                   {brands.map((brand) => (
                     <label
                       key={brand}
-                      className="flex cursor-pointer items-center gap-2.5 text-sm text-slate-700"
+                      className="flex cursor-pointer items-center gap-2.5 text-sm text-brand-600"
                     >
                       <input
                         type="checkbox"
@@ -166,7 +166,7 @@ export function CatalogControls({
                               : current.filter((value) => value !== brand),
                           )
                         }
-                        className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-600"
+                        className="h-4 w-4 rounded border-brand-200 text-brand-700 focus:ring-brand-600"
                       />
                       {brand}
                     </label>
@@ -176,7 +176,7 @@ export function CatalogControls({
             )}
 
             <fieldset className="p-4">
-              <legend className="mb-2.5 text-sm font-semibold text-slate-900">
+              <legend className="mb-2.5 text-sm font-semibold text-brand-900">
                 Цена, {currencySymbol}
               </legend>
               <div className="flex items-center gap-2">
@@ -190,7 +190,7 @@ export function CatalogControls({
                   aria-label="Цена от"
                   className="field tnum px-2.5 py-2 text-sm"
                 />
-                <span className="text-slate-400">—</span>
+                <span className="text-brand-300">—</span>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -202,19 +202,19 @@ export function CatalogControls({
                   className="field tnum px-2.5 py-2 text-sm"
                 />
               </div>
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="mt-2 text-xs text-brand-400">
                 В разделе: {formatPrice(bounds.min, currencySymbol)} —{" "}
                 {formatPrice(bounds.max, currencySymbol)}
               </p>
             </fieldset>
 
             <div className="p-4">
-              <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-700">
+              <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-brand-600">
                 <input
                   type="checkbox"
                   checked={inStockOnly}
                   onChange={(event) => setInStockOnly(event.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-600"
+                  className="h-4 w-4 rounded border-brand-200 text-brand-700 focus:ring-brand-600"
                 />
                 Только в наличии
               </label>
@@ -239,17 +239,17 @@ export function CatalogControls({
       {/* ---------------------------- Сетка ---------------------------- */}
       <div>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-600" aria-live="polite">
+          <p className="text-sm text-brand-500" aria-live="polite">
             {visible.size === items.length
               ? pluralize(items.length, "товар", "товара", "товаров")
               : `Показано ${visible.size} из ${items.length}`}
           </p>
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-brand-500">
             Сортировка:
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value as SortKey)}
-              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm font-medium text-slate-800 focus:border-brand-600 focus:outline-none"
+              className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-sm font-medium text-brand-800 focus:border-brand-600 focus:outline-none"
             >
               {Object.entries(SORT_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -262,10 +262,10 @@ export function CatalogControls({
 
         {visible.size === 0 ? (
           <div className="card p-10 text-center">
-            <p className="text-base font-semibold text-slate-900">
+            <p className="text-base font-semibold text-brand-900">
               Под эти условия ничего не подошло
             </p>
-            <p className="mt-1.5 text-sm text-slate-600">
+            <p className="mt-1.5 text-sm text-brand-500">
               Попробуйте расширить диапазон цены или снять фильтр по бренду.
             </p>
             <button type="button" onClick={reset} className="btn-primary mt-5">

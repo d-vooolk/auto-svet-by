@@ -21,8 +21,8 @@ export function Section({
 }) {
   return (
     <section className="card p-4 sm:p-5">
-      <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-      {note && <p className="mt-1 text-xs leading-relaxed text-slate-500">{note}</p>}
+      <h2 className="text-sm font-bold text-brand-900">{title}</h2>
+      {note && <p className="mt-1 text-xs leading-relaxed text-brand-400">{note}</p>}
       <div className="mt-4 space-y-4">{children}</div>
     </section>
   );
@@ -46,7 +46,7 @@ export function Field({
         {required && <span className="text-red-600"> *</span>}
       </span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-brand-400">{hint}</span>}
     </label>
   );
 }

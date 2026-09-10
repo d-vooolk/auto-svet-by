@@ -48,9 +48,9 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-extrabold text-slate-900">
+        <h1 className="text-xl font-semibold text-brand-900">
           Товары{" "}
-          <span className="tnum text-base font-medium text-slate-500">
+          <span className="tnum text-base font-medium text-brand-400">
             {total}
           </span>
         </h1>
@@ -106,13 +106,13 @@ export default async function ProductsPage({ searchParams }: PageProps) {
 
       {/* --------------------------- Таблица --------------------------- */}
       {rows.length === 0 ? (
-        <p className="card p-10 text-center text-sm text-slate-500">
+        <p className="card p-10 text-center text-sm text-brand-400">
           {query || categoryId
             ? "Ничего не нашлось. Попробуйте изменить запрос."
             : "Товаров пока нет. Начните с кнопки «Добавить товар»."}
         </p>
       ) : (
-        <div className="card divide-y divide-slate-100 overflow-hidden">
+        <div className="card divide-y divide-brand-100 overflow-hidden">
           {rows.map((product) => (
             <ProductRow
               key={product.id}
@@ -135,7 +135,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
               ← Назад
             </Link>
           )}
-          <span className="tnum text-sm text-slate-500">
+          <span className="tnum text-sm text-brand-400">
             {page} из {pages}
           </span>
           {page < pages && (

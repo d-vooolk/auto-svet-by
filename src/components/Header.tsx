@@ -25,22 +25,24 @@ export function Header() {
   }));
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+    // Полупрозрачный фон с размытием: при прокрутке содержимое просвечивает
+    // сквозь шапку, и она перестаёт быть отдельной плашкой поверх страницы.
+    <header className="sticky top-0 z-50 border-b border-brand-100 bg-white/80 backdrop-blur-xl">
       {/* Верхняя полоса: на мобильных прячем — там эта информация уезжает
           в меню и в подвал, а место на первом экране дороже. */}
-      <div className="hidden border-b border-slate-100 bg-slate-50 lg:block">
-        <div className="container-page flex h-9 items-center justify-between text-xs text-slate-600">
+      <div className="hidden border-b border-brand-100/70 lg:block">
+        <div className="container-page flex h-9 items-center justify-between text-xs text-brand-400">
           <p>{site.tagline}</p>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-6">
             <span>{site.workHours}</span>
-            <Link href="/delivery/" className="hover:text-brand-700">
+            <Link href="/delivery/" className="transition-colors hover:text-brand-700">
               Доставка по Минску и Беларуси
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="container-page flex h-16 items-center gap-3 lg:h-20 lg:gap-6">
+      <div className="container-page flex h-16 items-center gap-3 lg:h-[4.5rem] lg:gap-6">
         <MobileMenu
           categories={categoryLinks}
           pages={INFO_PAGES}
@@ -51,17 +53,17 @@ export function Header() {
 
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2.5"
+          className="group flex shrink-0 items-center gap-2.5"
           aria-label={`${site.name} — на главную`}
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-700 text-white">
-            <HeadlightIcon className="h-6 w-6" />
+          <span className="flex h-9 w-9 items-center justify-center rounded-control bg-brand-900 text-accent-400 transition-colors duration-200 group-hover:bg-brand-700">
+            <HeadlightIcon className="h-5 w-5" />
           </span>
           <span className="hidden sm:block">
-            <span className="block text-base leading-tight font-extrabold tracking-tight text-slate-900">
+            <span className="block text-[15px] leading-tight font-semibold tracking-tight text-brand-900">
               {site.name}
             </span>
-            <span className="block text-[11px] leading-tight text-slate-500">
+            <span className="block text-[11px] leading-tight text-brand-400">
               автосвет в Минске
             </span>
           </span>
@@ -73,14 +75,14 @@ export function Header() {
 
         <a
           href={`tel:${site.phoneHref}`}
-          className="hidden shrink-0 items-center gap-2 rounded-xl px-3 py-2 hover:bg-slate-100 xl:flex"
+          className="hidden shrink-0 items-center gap-2 rounded-control px-3 py-2 transition-colors hover:bg-brand-50 xl:flex"
         >
-          <PhoneIcon className="h-5 w-5 text-brand-700" />
+          <PhoneIcon className="h-5 w-5 text-brand-400" />
           <span>
-            <span className="block text-sm leading-tight font-semibold text-slate-900">
+            <span className="block text-sm leading-tight font-semibold text-brand-900">
               {site.phone}
             </span>
-            <span className="block text-[11px] leading-tight text-slate-500">
+            <span className="block text-[11px] leading-tight text-brand-400">
               Звоните, поможем с выбором
             </span>
           </span>
@@ -92,13 +94,13 @@ export function Header() {
       {/* Ссылки на категории в шапке — не только навигация, но и внутренняя
           перелинковка: краулер видит все разделы с любой страницы сайта. */}
       <nav
-        className="hidden border-t border-slate-100 lg:block"
+        className="hidden border-t border-brand-100/70 lg:block"
         aria-label="Категории"
       >
         <div className="container-page flex h-11 items-center gap-1">
           <Link
             href="/catalog/"
-            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-800 hover:bg-slate-100"
+            className="rounded-control px-3 py-1.5 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-50"
           >
             Весь каталог
           </Link>
@@ -106,7 +108,7 @@ export function Header() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-lg px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100"
+              className="rounded-control px-3 py-1.5 text-sm text-brand-500 transition-colors hover:bg-brand-50 hover:text-brand-900"
             >
               {link.label}
             </Link>

@@ -43,7 +43,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
         href={`/admin/orders/${search.toString() ? `?${search}` : ""}`}
         aria-current={active ? "page" : undefined}
         className={`rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
-          active ? "bg-brand-700 text-white" : "bg-white text-slate-700 hover:bg-slate-200"
+          active ? "bg-brand-700 text-white" : "bg-white text-brand-600 hover:bg-brand-100"
         }`}
       >
         {label}
@@ -56,9 +56,9 @@ export default async function OrdersPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-xl font-extrabold text-slate-900">
+      <h1 className="text-xl font-semibold text-brand-900">
         Заказы{" "}
-        <span className="tnum text-base font-medium text-slate-500">{total}</span>
+        <span className="tnum text-base font-medium text-brand-400">{total}</span>
       </h1>
 
       <div className="flex flex-wrap gap-2">
@@ -91,30 +91,30 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       </form>
 
       {rows.length === 0 ? (
-        <p className="card p-10 text-center text-sm text-slate-500">
+        <p className="card p-10 text-center text-sm text-brand-400">
           {query || status ? "Ничего не нашлось." : "Заказов пока нет."}
         </p>
       ) : (
-        <div className="card divide-y divide-slate-100 overflow-hidden">
+        <div className="card divide-y divide-brand-100 overflow-hidden">
           {rows.map((order) => (
             <Link
               key={order.id}
               href={`/admin/orders/${order.id}/`}
-              className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-slate-50"
+              className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-brand-50"
             >
-              <span className="tnum w-12 shrink-0 text-xs text-slate-400">
+              <span className="tnum w-12 shrink-0 text-xs text-brand-300">
                 №{order.id}
               </span>
               <OrderStatusBadge status={order.status} />
 
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-slate-900">
+                <span className="block truncate text-sm font-medium text-brand-900">
                   {order.name}{" "}
-                  <span className="tnum font-normal text-slate-500">
+                  <span className="tnum font-normal text-brand-400">
                     {order.phone}
                   </span>
                 </span>
-                <span className="block truncate text-xs text-slate-500">
+                <span className="block truncate text-xs text-brand-400">
                   {formatDate(order.createdAt)} · {order.items.length} поз. ·{" "}
                   {order.deliveryName || "доставка не указана"}
                 </span>
@@ -130,14 +130,14 @@ export default async function OrdersPage({ searchParams }: PageProps) {
               )}
               {!order.telegramSent && (
                 <span
-                  className="badge bg-slate-200 text-slate-600"
+                  className="badge bg-brand-100 text-brand-500"
                   title="Не ушёл в Telegram — заказ сохранён только здесь"
                 >
                   не отправлен
                 </span>
               )}
 
-              <span className="tnum shrink-0 text-sm font-semibold text-slate-900">
+              <span className="tnum shrink-0 text-sm font-semibold text-brand-900">
                 {formatPrice(order.total, site.currencySymbol)}
               </span>
             </Link>
@@ -155,7 +155,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
               ← Назад
             </Link>
           )}
-          <span className="tnum text-sm text-slate-500">
+          <span className="tnum text-sm text-brand-400">
             {page} из {pages}
           </span>
           {page < pages && (

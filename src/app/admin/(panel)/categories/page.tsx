@@ -19,9 +19,9 @@ export default function CategoriesPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-extrabold text-slate-900">
+        <h1 className="text-xl font-semibold text-brand-900">
           Разделы{" "}
-          <span className="tnum text-base font-medium text-slate-500">
+          <span className="tnum text-base font-medium text-brand-400">
             {brief.length}
           </span>
         </h1>
@@ -31,12 +31,12 @@ export default function CategoriesPage() {
       </div>
 
       {brief.length === 0 ? (
-        <p className="card p-10 text-center text-sm text-slate-500">
+        <p className="card p-10 text-center text-sm text-brand-400">
           Разделов пока нет. Без них товар создать не получится — начните
           отсюда.
         </p>
       ) : (
-        <div className="card divide-y divide-slate-100 overflow-hidden">
+        <div className="card divide-y divide-brand-100 overflow-hidden">
           {brief.map((category) => {
             const details = full.get(category.id);
             return (
@@ -44,18 +44,18 @@ export default function CategoriesPage() {
                 key={category.id}
                 className="flex items-center gap-3 px-4 py-3"
               >
-                <span className="tnum w-8 shrink-0 text-xs text-slate-400">
+                <span className="tnum w-8 shrink-0 text-xs text-brand-300">
                   {details?.order ?? "—"}
                 </span>
 
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/admin/categories/${category.id}/`}
-                    className="block truncate text-sm font-semibold text-slate-900 hover:text-brand-700"
+                    className="block truncate text-sm font-semibold text-brand-900 hover:text-brand-700"
                   >
                     {category.name}
                   </Link>
-                  <p className="truncate text-xs text-slate-500">
+                  <p className="truncate text-xs text-brand-400">
                     /catalog/{category.slug}/
                     {details?.excerpt ? ` · ${details.excerpt}` : ""}
                   </p>
@@ -63,7 +63,7 @@ export default function CategoriesPage() {
 
                 <Link
                   href={`/admin/products/?category=${category.id}`}
-                  className="tnum shrink-0 text-sm text-slate-500 hover:text-brand-700"
+                  className="tnum shrink-0 text-sm text-brand-400 hover:text-brand-700"
                   title="Товары раздела"
                 >
                   {category.count} тов.

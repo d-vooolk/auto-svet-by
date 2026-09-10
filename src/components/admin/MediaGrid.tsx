@@ -120,7 +120,7 @@ export function MediaGrid({ items: initial }: { items: MediaItem[] }) {
       <Problems items={problems} />
 
       {visible.length === 0 ? (
-        <p className="card p-10 text-center text-sm text-slate-500">
+        <p className="card p-10 text-center text-sm text-brand-400">
           {initial.length === 0
             ? "Фотографий пока нет. Загрузите их здесь или прямо в карточке товара."
             : "Ничего не нашлось."}
@@ -141,12 +141,12 @@ export function MediaGrid({ items: initial }: { items: MediaItem[] }) {
               />
               <div className="p-2">
                 <p
-                  className="truncate text-xs font-medium text-slate-700"
+                  className="truncate text-xs font-medium text-brand-600"
                   title={item.path}
                 >
                   {item.path}
                 </p>
-                <p className="tnum mt-0.5 text-[11px] text-slate-400">
+                <p className="tnum mt-0.5 text-[11px] text-brand-300">
                   {item.w}×{item.h} · {(item.bytes / 1024).toFixed(0)} КБ
                 </p>
                 <button

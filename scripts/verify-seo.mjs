@@ -2,22 +2,22 @@
 /**
  * Проверка собранного сайта: то, что должно быть в HTML для поиска, там есть.
  *
- * Запускать после сборки:  node scripts/verify-seo.mjs
+ * Запускать против работающего сервера:
+ *
+ *   npm run build && npm start     (в одном окне)
+ *   npm run verify                 (в другом)
+ *
+ * Раньше скрипт читал готовые файлы из out/. Статического экспорта больше
+ * нет — страницы отдаёт Node-сервер, поэтому проверяем то же самое, но по
+ * HTTP. Это даже честнее: так мы видим ровно тот HTML, который получит
+ * краулер, вместе с заголовками и редиректами.
  *
  * Смысл не в красоте отчёта, а в том, чтобы после правки шаблонов одной
  * командой убедиться: метатеги на месте, разметка товара валидная, товары
  * попали в HTML без участия JavaScript, sitemap не пустой.
  */
 
-import fs from "node:fs";
-import path from "node:path";
-
-const OUT = path.join(process.cwd(), "out");
-
-if (!fs.existsSync(OUT)) {
-  console.error("Сначала соберите сайт: npm run build");
-  process.exit(1);
-}
+const BASE = (process.env.SITE_URL ?? "http://127.0.0.1:3000").replace(/\/$/, "");
 
 let failures = 0;
 
@@ -27,8 +27,17 @@ function check(label, condition, detail = "") {
   console.log(`  ${ok ? "✓" : "✗"} ${label}${detail ? ` — ${detail}` : ""}`);
 }
 
-function read(relative) {
-  return fs.readFileSync(path.join(OUT, relative), "utf8");
+/**
+ * Загружает адрес и отдаёт тело. redirect: "error" — намеренно: адреса в
+ * проекте канонические, со слешем на конце. Если проверка вдруг поедет по
+ * редиректу, мы об этом узнаем, а не будем молча проверять другую страницу.
+ */
+async function read(url) {
+  const response = await fetch(BASE + url, { redirect: "error" });
+  if (!response.ok) {
+    throw new Error(`${url} ответил ${response.status}`);
+  }
+  return response.text();
 }
 
 function head(html) {
@@ -55,11 +64,24 @@ function jsonLd(html) {
   });
 }
 
+/* --------------------------- Сервер на месте? --------------------------- */
+
+try {
+  await fetch(BASE + "/", { redirect: "error" });
+} catch {
+  console.error(
+    `Сайт не отвечает на ${BASE}\n` +
+      "Запустите его в соседнем окне: npm run build && npm start\n" +
+      "Другой адрес задаётся так: SITE_URL=https://auto-svet.by npm run verify",
+  );
+  process.exit(1);
+}
+
 /* ------------------------------ Главная ------------------------------ */
 
 console.log("\nГлавная");
 {
-  const html = read("index.html");
+  const html = await read("/");
   const h = head(html);
   check("есть <title>", /<title>[^<]{10,}<\/title>/.test(h));
   check(
@@ -82,7 +104,7 @@ console.log("\nГлавная");
 
 console.log("\nКатегория /catalog/lampy/");
 {
-  const html = read("catalog/lampy/index.html");
+  const html = await read("/catalog/lampy/");
   const h = head(html);
   const description = attr(h, /name="description" content="([^"]*)"/);
   check("есть description", description.length > 50);
@@ -102,7 +124,7 @@ console.log("\nКатегория /catalog/lampy/");
 
 console.log("\nТовар /product/osram-night-breaker-200/");
 {
-  const html = read("product/osram-night-breaker-200/index.html");
+  const html = await read("/product/osram-night-breaker-200/");
   const h = head(html);
   const description = attr(h, /name="description" content="([^"]*)"/);
   check("есть description", description.length > 50);
@@ -136,34 +158,49 @@ console.log("\nТовар /product/osram-night-breaker-200/");
 
 console.log("\nСлужебные файлы");
 {
-  const sitemap = read("sitemap.xml");
+  const sitemap = await read("/sitemap.xml");
   const urls = (sitemap.match(/<url>/g) ?? []).length;
   check("sitemap.xml не пустой", urls > 5, `адресов: ${urls}`);
   check("в sitemap нет корзины", !sitemap.includes("/cart/"));
 
-  const robots = read("robots.txt");
+  const robots = await read("/robots.txt");
   check("robots.txt ссылается на sitemap", robots.includes("sitemap.xml"));
   check("robots.txt закрывает корзину", robots.includes("/cart/"));
 
-  const variants = JSON.parse(read("variants.json"));
+  const variants = JSON.parse(await read("/variants.json"));
   check(
     "variants.json собран",
     Object.keys(variants).length > 0,
     `вариантов: ${Object.keys(variants).length}`,
   );
 
-  const index = JSON.parse(read("search-index.json"));
+  const index = JSON.parse(await read("/search-index.json"));
   check("search-index.json собран", index.length > 0, `товаров: ${index.length}`);
   check(
     "в индексе поиска есть подписи опций",
     index.some((entry) => entry.q.includes("h7")),
   );
 
-  const cart = read("cart/index.html");
+  const cart = await read("/cart/");
   check(
     "страница корзины закрыта от индексации",
     /name="robots" content="noindex/.test(head(cart)),
   );
+}
+
+/* ---------------------------- Админка ------------------------------- */
+
+// Админка обязана быть закрыта и от людей без куки, и от поисковиков.
+console.log("\nАдминка");
+{
+  const response = await fetch(BASE + "/admin/", { redirect: "manual" });
+  check(
+    "/admin/ без входа уводит на логин",
+    response.status === 307 || response.status === 302,
+    `ответ ${response.status}`,
+  );
+  const robots = await read("/robots.txt");
+  check("robots.txt закрывает /admin/", robots.includes("/admin/"));
 }
 
 console.log(

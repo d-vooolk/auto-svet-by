@@ -25,7 +25,7 @@ export default function AboutPage() {
       <Breadcrumbs items={[{ label: "О магазине" }]} />
 
       <div className="max-w-3xl">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+        <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl">
           О магазине
         </h1>
 
@@ -39,7 +39,7 @@ export default function AboutPage() {
             {pluralize(categories.length, "разделе", "разделах", "разделах")}.
           </p>
 
-          <h2 className="mt-8 mb-3 text-xl font-bold text-slate-900">
+          <h2 className="mt-8 mb-3 text-xl font-semibold text-brand-900">
             Почему проверяем перед отправкой
           </h2>
           <p>
@@ -51,7 +51,7 @@ export default function AboutPage() {
             уезжает.
           </p>
 
-          <h2 className="mt-8 mb-3 text-xl font-bold text-slate-900">
+          <h2 className="mt-8 mb-3 text-xl font-semibold text-brand-900">
             Почему нет онлайн-оплаты
           </h2>
           <p>
@@ -63,7 +63,7 @@ export default function AboutPage() {
             наличие — и только потом отправляем. Оплата при получении.
           </p>
 
-          <h2 className="mt-8 mb-3 text-xl font-bold text-slate-900">
+          <h2 className="mt-8 mb-3 text-xl font-semibold text-brand-900">
             Что в каталоге
           </h2>
           <ul className="mt-3 space-y-2">
@@ -76,7 +76,7 @@ export default function AboutPage() {
                   {category.name}
                 </Link>
                 {category.excerpt && (
-                  <span className="text-slate-600"> — {category.excerpt}</span>
+                  <span className="text-brand-500"> — {category.excerpt}</span>
                 )}
               </li>
             ))}
@@ -84,10 +84,10 @@ export default function AboutPage() {
         </div>
 
         <div className="mt-10 rounded-card bg-brand-50 p-6">
-          <p className="text-base font-semibold text-slate-900">
+          <p className="text-base font-semibold text-brand-900">
             Не знаете, что подойдёт вашей машине?
           </p>
-          <p className="mt-1.5 text-sm text-slate-600">
+          <p className="mt-1.5 text-sm text-brand-500">
             Позвоните — подберём по модели или VIN. {site.workHours}.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">

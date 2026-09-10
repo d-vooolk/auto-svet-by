@@ -48,7 +48,7 @@ export function SettingsForm({ site: initial }: { site: Site }) {
 
   return (
     <div className="space-y-5 pb-24">
-      <h1 className="text-xl font-extrabold text-slate-900">Настройки</h1>
+      <h1 className="text-xl font-semibold text-brand-900">Настройки</h1>
 
       <Problems items={problems} />
 
@@ -221,7 +221,7 @@ export function SettingsForm({ site: initial }: { site: Site }) {
         />
       </Section>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-100 bg-white/95 backdrop-blur">
         <div className="container-page flex items-center py-3">
           <button
             type="button"
@@ -263,7 +263,7 @@ function DeliveryEditor({
   return (
     <div className="space-y-3">
       {value.map((method, index) => (
-        <div key={index} className="rounded-card border border-slate-200 p-3">
+        <div key={index} className="rounded-card border border-brand-100 p-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="label mb-1 text-xs">Название</span>
@@ -343,11 +343,11 @@ function DeliveryEditor({
                 onChange={(event) =>
                   update(index, { requiresAddress: event.target.checked })
                 }
-                className="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-600"
+                className="h-4 w-4 rounded border-brand-200 text-brand-700 focus:ring-brand-600"
               />
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-brand-600">
                 Спрашивать адрес
-                <span className="block text-xs text-slate-500">
+                <span className="block text-xs text-brand-400">
                   Для самовывоза выключите
                 </span>
               </span>
@@ -362,7 +362,7 @@ function DeliveryEditor({
                   ? "Хотя бы один способ должен остаться"
                   : "Удалить способ"
               }
-              className="btn-ghost px-2 py-2 text-red-700 disabled:text-slate-300"
+              className="btn-ghost px-2 py-2 text-red-700 disabled:text-brand-300"
             >
               <TrashIcon className="h-4 w-4" />
             </button>

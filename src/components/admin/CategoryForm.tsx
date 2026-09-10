@@ -72,7 +72,7 @@ export function CategoryForm({
         <Link href="/admin/categories/" className="btn-ghost py-2 text-sm">
           ← К разделам
         </Link>
-        <h1 className="text-xl font-extrabold text-slate-900">
+        <h1 className="text-xl font-semibold text-brand-900">
           {creating ? "Новый раздел" : draft.name || "Без названия"}
         </h1>
         {!creating && (
@@ -80,7 +80,7 @@ export function CategoryForm({
             href={`/catalog/${draft.slug}/`}
             target="_blank"
             rel="noopener"
-            className="text-xs text-slate-500 hover:text-slate-800"
+            className="text-xs text-brand-400 hover:text-brand-800"
           >
             Открыть на сайте ↗
           </Link>
@@ -149,7 +149,7 @@ export function CategoryForm({
               value={draft.slug}
               onChange={(event) => patch({ slug: toSlug(event.target.value) })}
               disabled={!creating}
-              className="field disabled:bg-slate-100 disabled:text-slate-500"
+              className="field disabled:bg-brand-50 disabled:text-brand-400"
             />
           </Field>
 
@@ -158,7 +158,7 @@ export function CategoryForm({
               value={draft.id}
               onChange={(event) => patch({ id: toSlug(event.target.value) })}
               disabled={!creating}
-              className="field disabled:bg-slate-100 disabled:text-slate-500"
+              className="field disabled:bg-brand-50 disabled:text-brand-400"
             />
           </Field>
         </div>
@@ -215,7 +215,7 @@ export function CategoryForm({
         </Field>
       </Section>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-brand-100 bg-white/95 backdrop-blur">
         <div className="container-page flex items-center gap-3 py-3">
           {!creating &&
             (confirmDelete ? (
@@ -246,7 +246,7 @@ export function CategoryForm({
                     ? `Сначала перенесите ${productCount} товар(ов) в другой раздел`
                     : undefined
                 }
-                className="btn-ghost py-2 text-sm text-red-700 hover:bg-red-50 disabled:text-slate-400 disabled:hover:bg-transparent"
+                className="btn-ghost py-2 text-sm text-red-700 hover:bg-red-50 disabled:text-brand-300 disabled:hover:bg-transparent"
               >
                 <TrashIcon className="h-4 w-4" />
                 Удалить

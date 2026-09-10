@@ -232,7 +232,7 @@ export function CartCheckout({
   if (!hydrated) {
     return (
       <div className="card animate-pulse p-12">
-        <div className="mx-auto h-4 w-48 rounded bg-slate-200" />
+        <div className="mx-auto h-4 w-48 rounded bg-brand-100" />
       </div>
     );
   }
@@ -240,11 +240,11 @@ export function CartCheckout({
   if (items.length === 0) {
     return (
       <div className="card p-10 text-center sm:p-14">
-        <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-          <CartIcon className="h-7 w-7 text-slate-400" />
+        <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50">
+          <CartIcon className="h-7 w-7 text-brand-300" />
         </span>
-        <h2 className="text-lg font-bold text-slate-900">Корзина пуста</h2>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-slate-600">
+        <h2 className="text-lg font-bold text-brand-900">Корзина пуста</h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-brand-500">
           Выберите линзы, лампы или стёкла в каталоге — и они появятся здесь.
         </p>
         <Link href="/catalog/" className="btn-primary mt-6">
@@ -291,7 +291,7 @@ export function CartCheckout({
           </div>
         )}
 
-        <h2 className="mb-4 text-lg font-bold text-slate-900">
+        <h2 className="mb-4 text-lg font-bold text-brand-900">
           {pluralize(items.length, "позиция", "позиции", "позиций")} в корзине
         </h2>
 
@@ -299,12 +299,12 @@ export function CartCheckout({
 
         {/* --------------------------- Форма --------------------------- */}
         <form id={FORM_ID} onSubmit={handleSubmit} className="mt-8" noValidate>
-          <h2 className="mb-4 text-lg font-bold text-slate-900">
+          <h2 className="mb-4 text-lg font-bold text-brand-900">
             Оформление заказа
           </h2>
 
           <fieldset className="card mb-5 p-4">
-            <legend className="px-1 text-sm font-semibold text-slate-900">
+            <legend className="px-1 text-sm font-semibold text-brand-900">
               Способ получения
             </legend>
             <div className="space-y-2.5">
@@ -318,7 +318,7 @@ export function CartCheckout({
                     className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition-colors ${
                       entry.id === methodId
                         ? "border-brand-600 bg-brand-50"
-                        : "border-slate-200 hover:border-slate-300"
+                        : "border-brand-100 hover:border-brand-200"
                     }`}
                   >
                     <input
@@ -327,21 +327,21 @@ export function CartCheckout({
                       value={entry.id}
                       checked={entry.id === methodId}
                       onChange={() => setMethodId(entry.id)}
-                      className="mt-1 h-4 w-4 shrink-0 border-slate-300 text-brand-700 focus:ring-brand-600"
+                      className="mt-1 h-4 w-4 shrink-0 border-brand-200 text-brand-700 focus:ring-brand-600"
                     />
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-baseline justify-between gap-2">
-                        <span className="text-sm font-semibold text-slate-900">
+                        <span className="text-sm font-semibold text-brand-900">
                           {entry.name}
                         </span>
-                        <span className="tnum text-sm font-semibold text-slate-900">
+                        <span className="tnum text-sm font-semibold text-brand-900">
                           {cost === 0
                             ? "бесплатно"
                             : formatPrice(cost, currencySymbol)}
                         </span>
                       </span>
                       {entry.note && (
-                        <span className="mt-1 block text-xs leading-relaxed text-slate-600">
+                        <span className="mt-1 block text-xs leading-relaxed text-brand-500">
                           {entry.note}
                         </span>
                       )}
@@ -453,7 +453,7 @@ export function CartCheckout({
                 className="field resize-y"
                 placeholder="Модель авто, удобное время звонка, вопросы по совместимости"
               />
-              <p className="mt-1.5 text-xs text-slate-500">
+              <p className="mt-1.5 text-xs text-brand-400">
                 Напишите модель и год автомобиля — проверим совместимость до
                 отправки.
               </p>
@@ -555,26 +555,26 @@ function OrderSummary({
 }: OrderSummaryProps) {
   return (
     <div className="card p-5">
-      <h2 className="mb-4 text-base font-bold text-slate-900">Ваш заказ</h2>
+      <h2 className="mb-4 text-base font-bold text-brand-900">Ваш заказ</h2>
 
       <dl className="space-y-2.5 text-sm">
         <div className="flex justify-between">
-          <dt className="text-slate-600">Товары</dt>
-          <dd className="tnum font-medium text-slate-900">
+          <dt className="text-brand-500">Товары</dt>
+          <dd className="tnum font-medium text-brand-900">
             {formatPrice(subtotal, currencySymbol)}
           </dd>
         </div>
         <div className="flex justify-between gap-3">
-          <dt className="text-slate-600">{methodName ?? "Доставка"}</dt>
-          <dd className="tnum shrink-0 font-medium text-slate-900">
+          <dt className="text-brand-500">{methodName ?? "Доставка"}</dt>
+          <dd className="tnum shrink-0 font-medium text-brand-900">
             {deliveryCost === 0
               ? "бесплатно"
               : formatPrice(deliveryCost, currencySymbol)}
           </dd>
         </div>
-        <div className="flex items-baseline justify-between border-t border-slate-200 pt-2.5">
-          <dt className="text-base font-bold text-slate-900">Итого</dt>
-          <dd className="tnum text-xl font-extrabold text-slate-900">
+        <div className="flex items-baseline justify-between border-t border-brand-100 pt-2.5">
+          <dt className="text-base font-bold text-brand-900">Итого</dt>
+          <dd className="tnum text-xl font-semibold text-brand-900">
             {formatPrice(total, currencySymbol)}
           </dd>
         </div>
@@ -596,7 +596,7 @@ function OrderSummary({
         )}
       </button>
 
-      <p className="mt-3 flex gap-2 rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+      <p className="mt-3 flex gap-2 rounded-xl bg-brand-50 p-3 text-xs leading-relaxed text-brand-500">
         <TruckIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" />
         Менеджер перезвонит, подтвердит наличие и согласует время доставки.
         Онлайн-оплаты нет.
@@ -604,8 +604,8 @@ function OrderSummary({
 
       {payment.length > 0 && (
         <div className="mt-4">
-          <p className="mb-1.5 text-xs font-semibold text-slate-900">Оплата</p>
-          <ul className="space-y-1 text-xs text-slate-600">
+          <p className="mb-1.5 text-xs font-semibold text-brand-900">Оплата</p>
+          <ul className="space-y-1 text-xs text-brand-500">
             {payment.map((option) => (
               <li key={option} className="flex gap-1.5">
                 <CheckIcon className="mt-0.5 h-3 w-3 shrink-0 text-green-600" />

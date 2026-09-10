@@ -65,7 +65,7 @@ export function Picture({
 export function ImagePlaceholder({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 ${className}`}
+      className={`flex items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 ${className}`}
       aria-hidden="true"
     >
       <svg
@@ -74,7 +74,7 @@ export function ImagePlaceholder({ className = "" }: { className?: string }) {
         stroke="currentColor"
         strokeWidth="1.25"
         strokeLinecap="round"
-        className="h-1/3 max-h-16 w-1/3 max-w-16 text-slate-400"
+        className="h-1/3 max-h-16 w-1/3 max-w-16 text-brand-300"
       >
         <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h4a6 6 0 0 1 0 12h-4A2.5 2.5 0 0 1 3 15.5v-7Z" />
         <path d="M14.5 9h6M13.8 12h7.2M14.5 15h6" />

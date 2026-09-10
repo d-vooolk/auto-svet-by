@@ -85,7 +85,7 @@ export function ProductPurchase({
         <button
           type="button"
           onClick={() => mainEntry && setLightbox(true)}
-          className="photo-bed relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-card border border-slate-200"
+          className="photo-bed relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-card border border-brand-100"
           aria-label="Открыть фото на весь экран"
         >
           <Picture
@@ -96,7 +96,7 @@ export function ProductPurchase({
             className="h-full w-full object-contain p-6"
           />
           {!variant.inStock && (
-            <span className="badge absolute top-4 left-4 bg-slate-700 text-white">
+            <span className="badge absolute top-4 left-4 bg-brand-800 text-white">
               Нет в наличии
             </span>
           )}
@@ -119,7 +119,7 @@ export function ProductPurchase({
                 className={`photo-bed aspect-square overflow-hidden rounded-lg border-2 transition-colors ${
                   position === index
                     ? "border-brand-600"
-                    : "border-slate-200 hover:border-slate-400"
+                    : "border-brand-100 hover:border-brand-300"
                 }`}
               >
                 {images[path] ? (
@@ -141,12 +141,12 @@ export function ProductPurchase({
       {/* ------------------------ Цена и опции -------------------------- */}
       <div>
         <div className="mb-5 flex flex-wrap items-baseline gap-3">
-          <span className="tnum text-3xl font-extrabold text-slate-900">
+          <span className="tnum text-3xl font-semibold text-brand-900">
             {formatPrice(variant.price, currencySymbol)}
           </span>
           {variant.oldPrice && (
             <>
-              <span className="tnum text-lg text-slate-400 line-through">
+              <span className="tnum text-lg text-brand-300 line-through">
                 {formatPrice(variant.oldPrice, currencySymbol)}
               </span>
               <span className="badge bg-red-50 text-red-700">
@@ -155,7 +155,7 @@ export function ProductPurchase({
             </>
           )}
           {product.unit && (
-            <span className="w-full text-sm text-slate-500">
+            <span className="w-full text-sm text-brand-400">
               цена за {product.unit}
             </span>
           )}
@@ -169,8 +169,8 @@ export function ProductPurchase({
             </>
           ) : (
             <>
-              <CloseIcon className="h-4 w-4 text-slate-500" />
-              <span className="text-slate-600">
+              <CloseIcon className="h-4 w-4 text-brand-400" />
+              <span className="text-brand-500">
                 Этого варианта нет — напишите нам, подскажем аналог
               </span>
             </>
@@ -184,7 +184,7 @@ export function ProductPurchase({
             <fieldset key={group.id} className="mb-6">
               <legend className="label">
                 {group.name}
-                <span className="ml-1.5 font-normal text-slate-500">
+                <span className="ml-1.5 font-normal text-brand-400">
                   {group.values.find((value) => value.id === selectedId)?.label}
                 </span>
               </legend>
@@ -207,8 +207,8 @@ export function ProductPurchase({
                       className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${
                         selected
                           ? "border-brand-600 bg-brand-50 text-brand-800 ring-1 ring-brand-600"
-                          : "border-slate-300 bg-white text-slate-800 hover:border-slate-400"
-                      } ${outOfStock ? "text-slate-400 line-through" : ""}`}
+                          : "border-brand-200 bg-white text-brand-800 hover:border-brand-300"
+                      } ${outOfStock ? "text-brand-300 line-through" : ""}`}
                     >
                       {value.label}
                     </button>
@@ -216,24 +216,24 @@ export function ProductPurchase({
                 })}
               </div>
               {group.hint && (
-                <p className="mt-2 text-xs text-slate-500">{group.hint}</p>
+                <p className="mt-2 text-xs text-brand-400">{group.hint}</p>
               )}
             </fieldset>
           );
         })}
 
         {variant.sku && (
-          <p className="mb-5 text-xs text-slate-500">Артикул: {variant.sku}</p>
+          <p className="mb-5 text-xs text-brand-400">Артикул: {variant.sku}</p>
         )}
 
         {/* --------------------------- Заказ ---------------------------- */}
         <div className="mb-4 flex gap-3">
-          <div className="flex items-center rounded-xl border border-slate-300">
+          <div className="flex items-center rounded-xl border border-brand-200">
             <button
               type="button"
               onClick={() => setQty((current) => Math.max(1, current - 1))}
               disabled={qty <= 1}
-              className="p-3 text-slate-600 hover:text-slate-900 disabled:opacity-40"
+              className="p-3 text-brand-500 hover:text-brand-900 disabled:opacity-40"
               aria-label="Уменьшить количество"
             >
               <MinusIcon className="h-4 w-4" />
@@ -249,7 +249,7 @@ export function ProductPurchase({
               type="button"
               onClick={() => setQty((current) => Math.min(99, current + 1))}
               disabled={qty >= 99}
-              className="p-3 text-slate-600 hover:text-slate-900 disabled:opacity-40"
+              className="p-3 text-brand-500 hover:text-brand-900 disabled:opacity-40"
               aria-label="Увеличить количество"
             >
               <PlusIcon className="h-4 w-4" />
@@ -282,7 +282,7 @@ export function ProductPurchase({
           Перейти в корзину
         </Link>
 
-        <ul className="space-y-3 rounded-card bg-slate-50 p-4 text-sm text-slate-700">
+        <ul className="space-y-3 rounded-card bg-brand-50 p-4 text-sm text-brand-600">
           <li className="flex gap-2.5">
             <TruckIcon className="mt-0.5 h-4 w-4 shrink-0 text-brand-700" />
             <span>{deliveryNote}</span>
@@ -303,7 +303,7 @@ export function ProductPurchase({
       {/* -------------------------- Лайтбокс --------------------------- */}
       {lightbox && mainEntry && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/90 p-4"
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-brand-900/90 p-4"
           onClick={() => setLightbox(false)}
           role="dialog"
           aria-modal="true"

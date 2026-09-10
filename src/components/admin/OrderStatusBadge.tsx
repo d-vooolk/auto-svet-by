@@ -12,7 +12,7 @@ const TONES: Record<OrderStatus, string> = {
   called: "bg-blue-100 text-blue-900",
   shipped: "bg-violet-100 text-violet-900",
   done: "bg-green-100 text-green-900",
-  cancelled: "bg-slate-200 text-slate-600",
+  cancelled: "bg-brand-100 text-brand-500",
 };
 
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {

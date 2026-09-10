@@ -96,15 +96,15 @@ export default async function ProductPage({ params }: PageProps) {
 
       <header className="mb-7">
         {product.brand && (
-          <p className="mb-1.5 text-sm font-medium tracking-wide text-slate-500 uppercase">
+          <p className="mb-1.5 text-sm font-medium tracking-wide text-brand-400 uppercase">
             {product.brand}
           </p>
         )}
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-[2.5rem] lg:leading-tight">
+        <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
           {product.title}
         </h1>
         {product.excerpt && (
-          <p className="mt-3 max-w-2xl text-base text-slate-600">
+          <p className="mt-3 max-w-2xl text-base text-brand-500">
             {product.excerpt}
           </p>
         )}
@@ -119,10 +119,10 @@ export default async function ProductPage({ params }: PageProps) {
       />
 
       {/* -------------------- Описание и характеристики ------------------ */}
-      <div className="mt-14 grid gap-10 border-t border-slate-200 pt-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-12">
+      <div className="mt-14 grid gap-10 border-t border-brand-100 pt-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-12">
         {product.description && (
           <section className="prose-shop">
-            <h2 className="mb-4 text-xl font-bold text-slate-900">Описание</h2>
+            <h2 className="mb-4 text-xl font-semibold text-brand-900">Описание</h2>
             {product.description.split("\n\n").map((paragraph, index) => (
               <p key={index}>{paragraph}</p>
             ))}
@@ -131,17 +131,17 @@ export default async function ProductPage({ params }: PageProps) {
 
         {product.specs.length > 0 && (
           <section>
-            <h2 className="mb-4 text-xl font-bold text-slate-900">
+            <h2 className="mb-4 text-xl font-semibold text-brand-900">
               Характеристики
             </h2>
-            <dl className="card divide-y divide-slate-100 overflow-hidden">
+            <dl className="card divide-y divide-brand-100 overflow-hidden">
               {product.specs.map((spec) => (
                 <div
                   key={spec.name}
                   className="flex items-baseline justify-between gap-4 px-4 py-3"
                 >
-                  <dt className="text-sm text-slate-500">{spec.name}</dt>
-                  <dd className="text-right text-sm font-medium text-slate-900">
+                  <dt className="text-sm text-brand-400">{spec.name}</dt>
+                  <dd className="text-right text-sm font-medium text-brand-900">
                     {spec.value}
                   </dd>
                 </div>
@@ -153,8 +153,8 @@ export default async function ProductPage({ params }: PageProps) {
 
       {/* ------------------------- Похожие товары ----------------------- */}
       {related.length > 0 && (
-        <section className="mt-14 border-t border-slate-200 pt-10">
-          <h2 className="mb-6 text-xl font-bold text-slate-900 sm:text-2xl">
+        <section className="mt-14 border-t border-brand-100 pt-10">
+          <h2 className="mb-6 text-xl font-semibold text-brand-900 sm:text-2xl">
             Смотрите также
           </h2>
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

@@ -23,7 +23,7 @@ export default function CartPage() {
     <div className="container-page">
       <Breadcrumbs items={[{ label: "Корзина" }]} />
 
-      <h1 className="mb-7 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+      <h1 className="mb-8 text-3xl font-semibold text-brand-900 sm:text-4xl">
         Корзина
       </h1>
 

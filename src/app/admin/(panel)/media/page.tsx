@@ -27,13 +27,13 @@ export default function MediaPage() {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="text-xl font-extrabold text-slate-900">
+        <h1 className="text-xl font-semibold text-brand-900">
           Фотографии{" "}
-          <span className="tnum text-base font-medium text-slate-500">
+          <span className="tnum text-base font-medium text-brand-400">
             {items.length}
           </span>
         </h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-brand-400">
           Занимают на диске{" "}
           <span className="tnum">{(totalBytes / 1024 / 1024).toFixed(1)} МБ</span>{" "}
           во всех форматах и размерах

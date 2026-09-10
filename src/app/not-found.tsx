@@ -20,11 +20,11 @@ export default function NotFound() {
       <Header />
       <main id="main" className="container-page flex-1 py-16 sm:py-24">
         <div className="mx-auto max-w-lg text-center">
-          <p className="text-5xl font-extrabold text-brand-700">404</p>
-          <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-slate-900">
+          <p className="text-5xl font-semibold text-brand-700">404</p>
+          <h1 className="mt-4 text-3xl font-semibold text-brand-900">
             Страница не найдена
           </h1>
-          <p className="mt-3 text-base text-slate-600">
+          <p className="mt-3 text-base text-brand-500">
             Возможно, товар снят с продажи или в адресе опечатка. Посмотрите
             каталог или позвоните — подскажем аналог.
           </p>
@@ -39,7 +39,7 @@ export default function NotFound() {
           </div>
 
           <nav className="mt-10" aria-label="Разделы каталога">
-            <p className="mb-3 text-sm font-semibold text-slate-900">
+            <p className="mb-3 text-sm font-semibold text-brand-900">
               Разделы магазина
             </p>
             <ul className="flex flex-wrap justify-center gap-2">
@@ -47,7 +47,7 @@ export default function NotFound() {
                 <li key={category.id}>
                   <Link
                     href={`/catalog/${category.slug}/`}
-                    className="inline-flex rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-800 hover:border-brand-600 hover:text-brand-700"
+                    className="inline-flex rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm text-brand-800 hover:border-brand-600 hover:text-brand-700"
                   >
                     {category.name}
                   </Link>

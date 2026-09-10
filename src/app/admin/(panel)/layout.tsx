@@ -29,7 +29,7 @@ export default async function PanelLayout({
   const { newCount } = orderStats();
 
   return (
-    <div className="flex min-h-dvh flex-col bg-slate-100">
+    <div className="flex min-h-dvh flex-col bg-brand-50">
       <AdminNav
         siteName={site.name}
         login={admin.login}

@@ -17,7 +17,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-extrabold text-slate-900">Сводка</h1>
+      <h1 className="text-xl font-semibold text-brand-900">Сводка</h1>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
@@ -48,8 +48,8 @@ export default function DashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ------------------------- Заказы ------------------------- */}
         <section className="card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h2 className="text-sm font-bold text-slate-900">Последние заказы</h2>
+          <div className="flex items-center justify-between border-b border-brand-100 px-4 py-3">
+            <h2 className="text-sm font-bold text-brand-900">Последние заказы</h2>
             <Link
               href="/admin/orders/"
               className="text-xs font-medium text-brand-700 hover:underline"
@@ -59,27 +59,27 @@ export default function DashboardPage() {
           </div>
 
           {recent.rows.length === 0 ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-500">
+            <p className="px-4 py-8 text-center text-sm text-brand-400">
               Заказов пока нет.
             </p>
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-brand-100">
               {recent.rows.map((order) => (
                 <li key={order.id}>
                   <Link
                     href={`/admin/orders/${order.id}/`}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-brand-50"
                   >
                     <OrderStatusBadge status={order.status} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-slate-900">
+                      <span className="block truncate text-sm font-medium text-brand-900">
                         {order.name}
                       </span>
-                      <span className="block truncate text-xs text-slate-500">
+                      <span className="block truncate text-xs text-brand-400">
                         {order.phone} · {order.items.length} поз.
                       </span>
                     </span>
-                    <span className="tnum shrink-0 text-sm font-semibold text-slate-900">
+                    <span className="tnum shrink-0 text-sm font-semibold text-brand-900">
                       {formatPrice(order.total, site.currencySymbol)}
                     </span>
                   </Link>
@@ -91,8 +91,8 @@ export default function DashboardPage() {
 
         {/* ------------------------- Каталог ------------------------ */}
         <section className="card overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <h2 className="text-sm font-bold text-slate-900">Разделы каталога</h2>
+          <div className="flex items-center justify-between border-b border-brand-100 px-4 py-3">
+            <h2 className="text-sm font-bold text-brand-900">Разделы каталога</h2>
             <Link
               href="/admin/products/new/"
               className="text-xs font-medium text-brand-700 hover:underline"
@@ -101,17 +101,17 @@ export default function DashboardPage() {
             </Link>
           </div>
 
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-brand-100">
             {categories.map((category) => (
               <li key={category.id}>
                 <Link
                   href={`/admin/products/?category=${category.id}`}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-brand-50"
                 >
-                  <span className="text-sm font-medium text-slate-900">
+                  <span className="text-sm font-medium text-brand-900">
                     {category.name}
                   </span>
-                  <span className="tnum text-sm text-slate-500">
+                  <span className="tnum text-sm text-brand-400">
                     {category.count}
                   </span>
                 </Link>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
           </ul>
 
           {outOfStock > 0 && (
-            <p className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
+            <p className="border-t border-brand-100 px-4 py-3 text-xs text-brand-400">
               Выключено из продажи товаров: <b className="tnum">{outOfStock}</b>.
               Кнопки заказа у них нет.
             </p>
@@ -144,20 +144,20 @@ interface StatProps {
 function Stat({ label, value, hint, href, accent }: StatProps) {
   const body = (
     <>
-      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="text-xs font-medium text-brand-400">{label}</p>
       <p
-        className={`tnum mt-1 text-2xl font-extrabold ${
-          accent ? "text-amber-600" : "text-slate-900"
+        className={`tnum mt-1 text-2xl font-semibold ${
+          accent ? "text-amber-600" : "text-brand-900"
         }`}
       >
         {value}
       </p>
-      {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="mt-0.5 text-xs text-brand-400">{hint}</p>}
     </>
   );
 
   return href ? (
-    <Link href={href} className="card block p-4 transition-colors hover:bg-slate-50">
+    <Link href={href} className="card block p-4 transition-colors hover:bg-brand-50">
       {body}
     </Link>
   ) : (

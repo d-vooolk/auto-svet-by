@@ -61,7 +61,7 @@ export function OrderControls({ id, status: initial, note: initialNote }: OrderC
 
   return (
     <section className="card p-4">
-      <h2 className="mb-3 text-sm font-bold text-slate-900">Обработка</h2>
+      <h2 className="mb-3 text-sm font-bold text-brand-900">Обработка</h2>
 
       <Problems items={problems} />
 
@@ -76,7 +76,7 @@ export function OrderControls({ id, status: initial, note: initialNote }: OrderC
             className={`rounded-xl px-3 py-1.5 text-sm font-medium transition-colors ${
               status === entry.id
                 ? "bg-brand-700 text-white"
-                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                : "bg-brand-50 text-brand-600 hover:bg-brand-100"
             }`}
           >
             {entry.name}
@@ -119,7 +119,7 @@ export function OrderControls({ id, status: initial, note: initialNote }: OrderC
         </button>
       </div>
 
-      <div className="mt-4 border-t border-slate-100 pt-3">
+      <div className="mt-4 border-t border-brand-100 pt-3">
         {confirmDelete ? (
           <div className="flex flex-wrap gap-2">
             <button
@@ -153,7 +153,7 @@ export function OrderControls({ id, status: initial, note: initialNote }: OrderC
             Удалить заказ
           </button>
         )}
-        <p className="mt-2 text-xs text-slate-400">
+        <p className="mt-2 text-xs text-brand-300">
           Отменённый заказ лучше пометить статусом «Отменён» — так останется
           история. Удаление стирает его насовсем.
         </p>

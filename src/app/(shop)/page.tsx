@@ -15,6 +15,7 @@ import {
   getCategories,
   getCategoryCounts,
   getFeaturedProducts,
+  getProducts,
   getSite,
 } from "@/lib/catalog";
 import { pluralize } from "@/lib/format";
@@ -32,109 +33,225 @@ export function generateMetadata(): Metadata {
 
 const ICONS = [TruckIcon, ShieldIcon, CheckIcon, PhoneIcon];
 
+/**
+ * Короткие обозначения из каталога для бегущей строки: H7, HB4, D2S, 5000K.
+ *
+ * Берём из настоящих опций товаров, а не из захардкоженного списка — иначе
+ * строка начнёт врать в тот день, когда ассортимент сменится.
+ *
+ * Отбор по форме, а не по названию группы («Цоколь», «Цветовая
+ * температура»): названия групп владелец магазина правит в админке, и
+ * привязка к ним сломалась бы от переименования. Форма же устойчива —
+ * обозначение цоколя или температуры это всегда короткая метка с цифрой и
+ * латиницей, а «Чёрный», «Дорестайлинг» и «Пара (левое + правое)» под неё
+ * не подходят.
+ */
+function catalogSpecs(): string[] {
+  const specs = new Set<string>();
+
+  for (const product of getProducts()) {
+    for (const group of product.optionGroups) {
+      for (const value of group.values) {
+        // «5000K — белый» → «5000K»: в строке нужен только сам код.
+        const label = value.label.split("—")[0].trim();
+        if (label.length <= 6 && /\d/.test(label) && /^[A-Za-z0-9./"″-]+$/.test(label)) {
+          specs.add(label);
+        }
+      }
+    }
+  }
+
+  // numeric: true, иначе строковое сравнение ставит H11 перед H4 —
+  // «1» меньше «4» посимвольно. Человек ждёт H4, H7, H11.
+  return [...specs].sort((a, b) => a.localeCompare(b, "ru", { numeric: true }));
+}
+
 export default function HomePage() {
   const site = getSite();
   const categories = getCategories();
   const counts = getCategoryCounts();
   const featured = getFeaturedProducts(8);
+  const specs = catalogSpecs();
+  // Бегущая строка: сначала разделы, потом обозначения. Список повторяется
+  // дважды внутри дорожки — так стык при зацикливании незаметен.
+  const ticker = [...categories.map((category) => category.name), ...specs];
 
   return (
     <>
       <JsonLd data={organizationJsonLd()} />
 
       {/* ----------------------------- Хиро ----------------------------- */}
-      <section className="border-b border-slate-200 bg-gradient-to-br from-brand-900 via-brand-800 to-brand-700">
-        <div className="container-page grid gap-10 py-14 lg:grid-cols-[1.1fr_1fr] lg:items-center lg:py-20">
-          <div>
-            {/* h1 на главной — под самый частотный запрос. */}
-            <h1 className="text-3xl leading-[1.15] font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
-              Автосвет в Минске: линзы, стёкла фар и лампы
+      {/*
+        Первый экран прошёл два состояния. Сначала это была сплошная синяя
+        заливка во всю ширину: заметно, но белый текст на цвете читается
+        хуже чёрного на белом, а фотографии товаров рядом выглядели
+        вырезанными из другого сайта. Потом фон стал белым — стало чисто,
+        но пусто: половина экрана уходила под четыре одинаковых
+        прямоугольника со ссылками на разделы.
+
+        Теперь правую половину занимает то, чем магазин торгует, — линза.
+        Она нарисована градиентами (классы .lens-* в globals.css), поэтому
+        не зависит от того, залиты ли фотографии в media/, и не добавляет
+        к странице ни байта.
+
+        Ссылки на разделы из хиро убраны без потери: сразу под ним идёт
+        секция «Категории», где те же разделы даны все и с картинками, а в
+        шапке они есть на каждой странице сайта.
+      */}
+      <section className="beam grid-hint relative overflow-hidden border-b border-brand-100">
+        <div className="container-page grid gap-12 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-8 lg:py-20">
+          <div className="rise">
+            {/* Плашка статуса: город и часы работы до заголовка — для
+                местного магазина это первое, что хотят знать. */}
+            <span className="inline-flex items-center gap-2.5 rounded-full border border-brand-100 bg-white/70 py-1.5 pr-4 pl-3 text-xs font-medium text-brand-500 backdrop-blur">
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-accent-400 opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-500" />
+              </span>
+              {site.address.city} · {site.workHours}
+            </span>
+
+            {/* h1 на главной — под самый частотный запрос. Текст менять
+                нельзя, а подать его крупнее можно. */}
+            <h1 className="mt-6 text-[2.5rem] leading-[1.05] font-semibold text-brand-900 sm:text-5xl lg:text-[3.75rem]">
+              Автосвет в Минске:{" "}
+              <span className="relative inline-block whitespace-nowrap">
+                линзы
+                {/* Подчёркивание рисуем сами: у text-decoration нельзя
+                    задать ни толщину в долях кегля, ни мягкий цвет.
+                    Поверх него .sweep гоняет блик — тот самый свет. */}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-x-0 -bottom-0.5 -z-10 h-[0.3em] rounded-full bg-accent-300"
+                />
+                <span
+                  aria-hidden="true"
+                  className="sweep absolute inset-x-0 -bottom-0.5 -z-10 h-[0.3em] rounded-full"
+                />
+              </span>
+              , стёкла фар и лампы
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-brand-100 sm:text-lg">
+
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-brand-500 sm:text-lg">
               Би-ЛЕД и би-ксеноновые модули, стёкла на замену помутневшим,
               лампы во всех популярных цоколях. Проверяем каждый комплект на
               стенде перед отправкой.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/catalog/"
-                className="btn bg-white text-brand-800 hover:bg-brand-50"
-              >
+              <Link href="/catalog/" className="btn-primary">
                 Смотреть каталог
                 <ChevronRightIcon className="h-4 w-4" />
               </Link>
-              <a
-                href={`tel:${site.phoneHref}`}
-                className="btn border border-white/30 text-white hover:bg-white/10"
-              >
+              <a href={`tel:${site.phoneHref}`} className="btn-secondary">
                 <PhoneIcon className="h-4 w-4" />
                 {site.phone}
               </a>
             </div>
 
-            <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-white/15 pt-6">
+            <dl className="mt-10 grid max-w-lg grid-cols-3 gap-6 border-t border-brand-100 pt-7">
               <div>
-                <dt className="text-xs text-brand-200">Доставка по Минску</dt>
-                <dd className="mt-0.5 text-base font-bold text-white">
+                <dt className="text-xs text-brand-400">Доставка по Минску</dt>
+                <dd className="mt-1 text-[15px] font-semibold text-brand-900">
                   в день заказа
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-brand-200">Оплата</dt>
-                <dd className="mt-0.5 text-base font-bold text-white">
+                <dt className="text-xs text-brand-400">Оплата</dt>
+                <dd className="mt-1 text-[15px] font-semibold text-brand-900">
                   при получении
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-brand-200">Гарантия</dt>
-                <dd className="mt-0.5 text-base font-bold text-white">
+                <dt className="text-xs text-brand-400">Гарантия</dt>
+                <dd className="mt-1 text-[15px] font-semibold text-brand-900">
                   до 12 мес.
                 </dd>
               </div>
             </dl>
           </div>
 
-          {/* Быстрый переход в разделы прямо с первого экрана. */}
-          <div className="grid gap-3 sm:grid-cols-2">
-            {categories.slice(0, 4).map((category) => (
-              <Link
-                key={category.id}
-                href={`/catalog/${category.slug}/`}
-                className="group rounded-card border border-white/15 bg-white/5 p-5 backdrop-blur transition-colors hover:bg-white/10"
+          {/* Линза. Блок чисто декоративный: ничего, чего нет в тексте
+              слева, он не сообщает, поэтому от скринридера скрыт целиком. */}
+          <div
+            className="rise relative mx-auto w-full max-w-[24rem] lg:max-w-[30rem]"
+            style={{ animationDelay: "120ms" }}
+            aria-hidden="true"
+          >
+            <div className="lens-stage">
+              <span className="lens-halo" />
+              <span className="lens-bezel">
+                <span className="lens-glass block" />
+              </span>
+
+              <span className="lens-chip top-[6%] left-0">би-ЛЕД</span>
+              <span
+                className="lens-chip top-[32%] right-0"
+                style={{ animationDelay: "1.4s" }}
               >
-                <span className="block text-base font-bold text-white">
-                  {category.name}
-                </span>
-                <span className="mt-1 block text-xs text-brand-200">
-                  {pluralize(counts[category.id] ?? 0, "товар", "товара", "товаров")}
-                </span>
-                <span className="mt-3 flex items-center gap-1 text-sm font-medium text-white/90">
-                  Перейти
-                  <ChevronRightIcon className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </Link>
+                5000K
+              </span>
+              <span
+                className="lens-chip bottom-[9%] left-[6%]"
+                style={{ animationDelay: "2.6s" }}
+              >
+                2.5″ и 3″
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Бегущая строка: чем торгуем, настоящими словами из каталога.
+            Заодно это те самые запросы, по которым магазин ищут. */}
+        <div className="marquee border-t border-brand-100 bg-white/50 py-3.5">
+          <div className="marquee-track">
+            {/* Два одинаковых прогона: второй подставляется под первый, и
+                сдвиг дорожки на половину ширины выглядит бесшовным. */}
+            {[0, 1].map((pass) => (
+              <ul
+                key={pass}
+                className="flex shrink-0 items-center"
+                // Второй прогон — технический дубль ради бесшовного стыка.
+                // Скринридеру он не нужен: иначе весь список зачитывается
+                // дважды подряд.
+                aria-hidden={pass === 1 || undefined}
+              >
+                {ticker.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-8 px-4 text-sm font-medium whitespace-nowrap text-brand-400"
+                  >
+                    {item}
+                    <span
+                      aria-hidden="true"
+                      className="h-1 w-1 rounded-full bg-accent-400"
+                    />
+                  </li>
+                ))}
+              </ul>
             ))}
           </div>
         </div>
       </section>
 
       {/* --------------------------- Категории -------------------------- */}
-      <section className="container-page py-14">
-        <div className="mb-7 flex items-end justify-between gap-4">
+      <section className="container-page py-20">
+        <div className="reveal mb-10 flex items-end justify-between gap-6">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+            <p className="eyebrow">Каталог</p>
+            <h2 className="mt-3 text-3xl font-semibold text-brand-900 sm:text-4xl">
               Категории
             </h2>
-            <p className="mt-1.5 text-sm text-slate-600">
+            <p className="mt-3 text-[15px] text-brand-500">
               Не уверены, что подойдёт к вашей машине — позвоните, подберём.
             </p>
           </div>
           <Link
             href="/catalog/"
-            className="hidden shrink-0 text-sm font-semibold text-brand-700 hover:underline sm:block"
+            className="group hidden shrink-0 items-center gap-1.5 text-sm font-semibold text-brand-700 sm:flex"
           >
-            Весь каталог →
+            Весь каталог
+            <ChevronRightIcon className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />
           </Link>
         </div>
 
@@ -143,27 +260,29 @@ export default function HomePage() {
             <Link
               key={category.id}
               href={`/catalog/${category.slug}/`}
-              className="group card flex gap-4 overflow-hidden p-4 transition-shadow hover:shadow-card-hover"
+              className="group card card-link reveal flex gap-5 overflow-hidden p-5"
             >
-              <span className="photo-bed flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl">
+              <span className="photo-bed flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-control">
                 <Picture
                   entry={getImage(category.image)}
                   alt=""
                   sizes="96px"
-                  className="h-full w-full object-contain p-2 transition-transform group-hover:scale-105"
+                  className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
                 />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline gap-2">
-                  <span className="text-base font-bold text-slate-900 group-hover:text-brand-700">
+                  <span className="text-[15px] font-semibold text-brand-900">
                     {category.name}
                   </span>
-                  <span className="tnum text-xs text-slate-400">
-                    {counts[category.id] ?? 0}
+                  {/* Голая цифра рядом с названием читалась загадкой —
+                      «Лампы 4». Со словом понятно без догадок. */}
+                  <span className="tnum text-xs text-brand-300">
+                    {pluralize(counts[category.id] ?? 0, "товар", "товара", "товаров")}
                   </span>
                 </span>
                 {category.excerpt && (
-                  <span className="mt-1 block text-sm leading-snug text-slate-600">
+                  <span className="mt-1.5 block text-sm leading-relaxed text-brand-500">
                     {category.excerpt}
                   </span>
                 )}
@@ -175,11 +294,14 @@ export default function HomePage() {
 
       {/* ---------------------------- Хиты ------------------------------ */}
       {featured.length > 0 && (
-        <section className="border-y border-slate-200 bg-slate-50 py-14">
+        <section className="border-y border-brand-100 bg-brand-50/50 py-20">
           <div className="container-page">
-            <h2 className="mb-7 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-              Выбирают чаще всего
-            </h2>
+            <div className="reveal mb-10">
+              <p className="eyebrow">Хиты продаж</p>
+              <h2 className="mt-3 text-3xl font-semibold text-brand-900 sm:text-4xl">
+                Выбирают чаще всего
+              </h2>
+            </div>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
               {featured.map((product, position) => (
                 <ProductCard
@@ -198,22 +320,31 @@ export default function HomePage() {
 
       {/* -------------------------- Почему мы --------------------------- */}
       {site.features.length > 0 && (
-        <section className="container-page py-14">
-          <h2 className="mb-7 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-            Как мы работаем
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="container-page py-20">
+          <div className="reveal mb-10">
+            <p className="eyebrow">Как мы работаем</p>
+            <h2 className="mt-3 text-3xl font-semibold text-brand-900 sm:text-4xl">
+              Почему у нас спокойно покупать
+            </h2>
+          </div>
+          {/* Без карточек: четыре обведённых прямоугольника подряд — это
+              четыре рамки, которые спорят друг с другом. Достаточно одной
+              вертикальной линии слева, она же задаёт ритм колонок. */}
+          <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
             {site.features.map((feature, position) => {
               const Icon = ICONS[position % ICONS.length];
               return (
-                <div key={feature.title} className="card p-5">
-                  <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                <div
+                  key={feature.title}
+                  className="reveal border-l border-brand-100 pl-5"
+                >
+                  <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-control bg-accent-100 text-accent-600">
                     <Icon className="h-5 w-5" />
                   </span>
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 className="text-[15px] font-semibold text-brand-900">
                     {feature.title}
                   </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                  <p className="mt-2 text-sm leading-relaxed text-brand-500">
                     {feature.text}
                   </p>
                 </div>
@@ -224,9 +355,9 @@ export default function HomePage() {
       )}
 
       {/* ------------------------ Текст для поиска ---------------------- */}
-      <section className="border-t border-slate-200 bg-slate-50 py-14">
+      <section className="border-t border-brand-100 bg-brand-50/50 py-20">
         <div className="container-page prose-shop max-w-3xl">
-          <h2 className="mb-4 text-xl font-bold text-slate-900">
+          <h2 className="mb-5 text-2xl font-semibold text-brand-900">
             Автосвет с доставкой по Минску и Беларуси
           </h2>
           <p>
@@ -243,7 +374,7 @@ export default function HomePage() {
             машине, позвоните по номеру{" "}
             <a
               href={`tel:${site.phoneHref}`}
-              className="font-medium text-brand-700 hover:underline"
+              className="font-medium text-brand-900 underline decoration-accent-400 decoration-2 underline-offset-4 hover:decoration-accent-600"
             >
               {site.phone}
             </a>{" "}
@@ -255,7 +386,7 @@ export default function HomePage() {
             наличными или картой при получении.{" "}
             <Link
               href="/delivery/"
-              className="font-medium text-brand-700 hover:underline"
+              className="font-medium text-brand-900 underline decoration-accent-400 decoration-2 underline-offset-4 hover:decoration-accent-600"
             >
               Условия доставки и оплаты
             </Link>

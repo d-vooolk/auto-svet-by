@@ -60,10 +60,10 @@ export default function DeliveryPage() {
       />
 
       <header className="mb-9 max-w-2xl">
-        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+        <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl">
           Доставка и оплата
         </h1>
-        <p className="mt-3 text-base text-slate-600">
+        <p className="mt-3 text-base text-brand-500">
           Доставляем по Минску курьером и по Беларуси почтой. Предоплата не
           нужна — платите при получении, когда увидели товар.
         </p>
@@ -71,7 +71,7 @@ export default function DeliveryPage() {
 
       {/* --------------------------- Доставка --------------------------- */}
       <section className="mb-12">
-        <h2 className="mb-5 flex items-center gap-2.5 text-xl font-bold text-slate-900">
+        <h2 className="mb-5 flex items-center gap-2.5 text-xl font-semibold text-brand-900">
           <TruckIcon className="h-5 w-5 text-brand-700" />
           Способы получения
         </h2>
@@ -79,7 +79,7 @@ export default function DeliveryPage() {
           {site.delivery.methods.map((method) => (
             <div key={method.id} className="card p-5">
               <div className="mb-2 flex items-baseline justify-between gap-3">
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-brand-900">
                   {method.name}
                 </h3>
                 <span className="tnum shrink-0 text-base font-bold text-brand-700">
@@ -89,7 +89,7 @@ export default function DeliveryPage() {
                 </span>
               </div>
               {method.note && (
-                <p className="text-sm leading-relaxed text-slate-600">
+                <p className="text-sm leading-relaxed text-brand-500">
                   {method.note}
                 </p>
               )}
@@ -108,33 +108,33 @@ export default function DeliveryPage() {
       {/* ---------------------------- Оплата ---------------------------- */}
       <section className="mb-12 grid gap-4 md:grid-cols-2">
         <div className="card p-5">
-          <h2 className="mb-3 text-lg font-bold text-slate-900">Оплата</h2>
+          <h2 className="mb-3 text-lg font-bold text-brand-900">Оплата</h2>
           <ul className="space-y-2">
             {site.payment.map((option) => (
               <li
                 key={option}
-                className="flex gap-2.5 text-sm leading-relaxed text-slate-700"
+                className="flex gap-2.5 text-sm leading-relaxed text-brand-600"
               >
                 <CheckIcon className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                 {option}
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs leading-relaxed text-slate-500">
+          <p className="mt-4 text-xs leading-relaxed text-brand-400">
             Онлайн-оплаты на сайте нет. Это сделано намеренно: вы сначала
             видите товар, потом платите.
           </p>
         </div>
 
         <div className="card p-5">
-          <h2 className="mb-3 flex items-center gap-2.5 text-lg font-bold text-slate-900">
+          <h2 className="mb-3 flex items-center gap-2.5 text-lg font-bold text-brand-900">
             <ShieldIcon className="h-5 w-5 text-brand-700" />
             Гарантия и возврат
           </h2>
-          <p className="text-sm leading-relaxed text-slate-700">
+          <p className="text-sm leading-relaxed text-brand-600">
             {site.warranty}
           </p>
-          <p className="mt-3 text-sm leading-relaxed text-slate-700">
+          <p className="mt-3 text-sm leading-relaxed text-brand-600">
             Если вариант не подошёл по цоколю или стороне — обменяем. Товар с
             заводским дефектом меняем или возвращаем деньги.
           </p>
@@ -143,16 +143,16 @@ export default function DeliveryPage() {
 
       {/* ----------------------------- FAQ ------------------------------ */}
       <section className="mb-12 max-w-3xl">
-        <h2 className="mb-5 text-xl font-bold text-slate-900">
+        <h2 className="mb-5 text-xl font-semibold text-brand-900">
           Частые вопросы
         </h2>
         <div className="space-y-3">
           {FAQ.map((item) => (
             <details key={item.q} className="card group p-4">
-              <summary className="cursor-pointer list-none text-[15px] font-semibold text-slate-900 marker:hidden">
+              <summary className="cursor-pointer list-none text-[15px] font-semibold text-brand-900 marker:hidden">
                 {item.q}
               </summary>
-              <p className="mt-2.5 text-sm leading-relaxed text-slate-600">
+              <p className="mt-2.5 text-sm leading-relaxed text-brand-500">
                 {item.a}
               </p>
             </details>
@@ -161,10 +161,10 @@ export default function DeliveryPage() {
       </section>
 
       <div className="mb-4 rounded-card bg-brand-50 p-6 text-center">
-        <p className="text-base font-semibold text-slate-900">
+        <p className="text-base font-semibold text-brand-900">
           Остались вопросы по доставке?
         </p>
-        <p className="mt-1.5 text-sm text-slate-600">
+        <p className="mt-1.5 text-sm text-brand-500">
           Позвоните — ответим и поможем подобрать товар под вашу машину.
         </p>
         <div className="mt-4 flex flex-wrap justify-center gap-3">
