@@ -99,6 +99,15 @@ export const categorySchema = z.strictObject({
   _comment: z.string().optional(),
   id,
   slug,
+  /**
+   * Родительский раздел. Пусто — раздел верхнего уровня.
+   *
+   * Уровня ровно два: у подраздела своих подразделов быть не может. Это не
+   * упрощение ради кода, а решение про витрину — «Главная › Каталог ›
+   * Аксессуары › Маски › ...» в крошки уже не помещается, а меню на третьем
+   * уровне перестаёт открываться пальцем. Проверяет это store.ts.
+   */
+  parentId: id.optional(),
   name: z.string().min(1),
   menuName: z.string().optional(),
   order: z.number().int().optional(),

@@ -99,18 +99,26 @@ db.transaction(() => {
   ).run(JSON.stringify(site));
 
   const insertCategory = db.prepare(
-    `INSERT INTO categories (id, slug, name, sort_order, data, updated_at)
-     VALUES (@id, @slug, @name, @order, @data, @updatedAt)
+    `INSERT INTO categories (id, slug, name, parent_id, sort_order, data, updated_at)
+     VALUES (@id, @slug, @name, @parentId, @order, @data, @updatedAt)
      ON CONFLICT(id) DO UPDATE SET
-       slug = @slug, name = @name, sort_order = @order,
+       slug = @slug, name = @name, parent_id = @parentId, sort_order = @order,
        data = @data, updated_at = @updatedAt`,
   );
 
-  for (const category of categories) {
+  // Родители вперёд: parent_id смотрит на categories(id), и подраздел,
+  // вставленный раньше своего родителя, упёрся бы во внешний ключ.
+  const inOrder = [
+    ...categories.filter((category) => !category.parentId),
+    ...categories.filter((category) => category.parentId),
+  ];
+
+  for (const category of inOrder) {
     insertCategory.run({
       id: category.id,
       slug: category.slug,
       name: category.name,
+      parentId: category.parentId ?? null,
       order: category.order ?? 999,
       data: JSON.stringify(category),
       updatedAt: now,

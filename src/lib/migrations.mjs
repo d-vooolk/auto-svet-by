@@ -101,6 +101,16 @@ export const MIGRATIONS = [
 
     CREATE INDEX sessions_by_expiry ON sessions(expires_at);
   `,
+
+  /* 2 — подразделы */ `
+    -- Родитель раздела. NULL — раздел верхнего уровня.
+    -- ON DELETE RESTRICT: раздел с подразделами так просто не удалить,
+    -- сначала надо решить судьбу детей. Этим занимается store.ts.
+    ALTER TABLE categories
+      ADD COLUMN parent_id TEXT REFERENCES categories(id) ON DELETE RESTRICT;
+
+    CREATE INDEX categories_by_parent ON categories(parent_id, sort_order, name);
+  `,
 ];
 
 /**

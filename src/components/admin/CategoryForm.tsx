@@ -19,8 +19,17 @@ interface CategoryFormProps {
   previousId?: string;
   thumbs: Record<string, string>;
   productCount: number;
-  /** Все разделы — из них выбирается тот, куда уедут товары при удалении. */
-  categories: Array<{ id: string; name: string }>;
+  /**
+   * Все разделы: из них выбирается родитель и тот, куда уедут товары при
+   * удалении. count — товаров в самом разделе, children — подразделов.
+   */
+  categories: Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    count: number;
+    children: number;
+  }>;
 }
 
 export function CategoryForm({
@@ -38,7 +47,22 @@ export function CategoryForm({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const creating = !previousId;
-  const others = categories.filter((entry) => entry.id !== previousId);
+  const others = categories.filter(
+    (entry) => entry.id !== previousId && entry.children === 0,
+  );
+  // Родителем может стать только раздел верхнего уровня, и не сам себе.
+  const possibleParents = categories.filter(
+    (entry) => !entry.parentId && entry.id !== previousId,
+  );
+  const childCount =
+    categories.find((entry) => entry.id === previousId)?.children ?? 0;
+  const hasOwnChildren = childCount > 0;
+
+  // Сколько товаров лежит прямо в выбранном родителе. Пока они там, он не
+  // может обзавестись подразделами — их надо куда-то деть.
+  const parentProducts =
+    categories.find((entry) => entry.id === draft.parentId)?.count ?? 0;
+  const [adoptProducts, setAdoptProducts] = useState(true);
   const [moveTo, setMoveTo] = useState(others[0]?.id ?? "");
   // Товары есть, а переносить некуда — раздел последний. Удалять нельзя:
   // товары остались бы в базе без раздела, то есть нигде.
@@ -52,7 +76,11 @@ export function CategoryForm({
   const save = () => {
     setProblems([]);
     startTransition(async () => {
-      const result = await saveCategoryAction(clean(draft), previousId);
+      const result = await saveCategoryAction(
+        clean(draft),
+        previousId,
+        adoptProducts && parentProducts > 0,
+      );
       if (!result.ok) {
         setProblems(result.problems);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -145,6 +173,57 @@ export function CategoryForm({
             className="field tnum w-32"
           />
         </Field>
+
+        <Field
+          label="Родительский раздел"
+          hint={
+            hasOwnChildren
+              ? "У раздела есть свои подразделы — вложить его никуда нельзя"
+              : "Пусто — раздел верхнего уровня. Вложенность одна: подраздел подраздела не бывает."
+          }
+        >
+          <select
+            value={draft.parentId ?? ""}
+            onChange={(event) =>
+              patch({ parentId: event.target.value || undefined })
+            }
+            disabled={hasOwnChildren}
+            className="field w-full disabled:bg-brand-50 disabled:text-brand-400 sm:w-80"
+          >
+            <option value="">— верхний уровень —</option>
+            {possibleParents.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.name}
+                {entry.count > 0 ? ` (${entry.count} тов.)` : ""}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        {parentProducts > 0 && (
+          // Товары лежат только в листьях, поэтому родитель обязан
+          // опустеть. Единственный способ сделать это, не выходя из формы,
+          // — забрать его товары сюда.
+          <label className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <input
+              type="checkbox"
+              checked={adoptProducts}
+              onChange={(event) => setAdoptProducts(event.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              Перенести сюда{" "}
+              {pluralize(parentProducts, "товар", "товара", "товаров")} из
+              раздела «
+              {categories.find((entry) => entry.id === draft.parentId)?.name}».
+              <span className="mt-1 block text-xs text-amber-800">
+                Товары лежат только в разделах без подразделов, поэтому
+                родитель должен опустеть. Без переноса сохранить не выйдет —
+                разве что сначала разложить товары по другим разделам.
+              </span>
+            </span>
+          </label>
+        )}
       </Section>
 
       <Section
@@ -232,6 +311,15 @@ export function CategoryForm({
           {!creating &&
             (confirmDelete ? (
               <>
+                {hasOwnChildren && (
+                  // Поднять подразделы наверх — единственный вариант, не
+                  // теряющий товары, но адреса у них при этом меняются.
+                  // Сказать об этом надо до удаления, а не после.
+                  <p className="text-sm text-amber-900">
+                    {pluralize(childCount, "подраздел", "подраздела", "подразделов")}{" "}
+                    станут разделами верхнего уровня, их адреса укоротятся
+                  </p>
+                )}
                 {productCount > 0 && (
                   <label className="flex items-center gap-2 text-sm text-brand-600">
                     Перенести{" "}

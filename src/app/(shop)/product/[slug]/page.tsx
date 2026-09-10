@@ -6,6 +6,8 @@ import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductPurchase } from "@/components/ProductPurchase";
 import {
+  categoryTrail,
+  categoryUrl,
   getCategoryById,
   getProductBySlug,
   getProducts,
@@ -86,8 +88,13 @@ export default async function ProductPage({ params }: PageProps) {
       <Breadcrumbs
         items={[
           { label: "Каталог", href: "/catalog/" },
+          // Для товара из подраздела в крошки попадает вся цепочка:
+          // «Каталог › Аксессуары › Декоративные маски › товар».
           ...(category
-            ? [{ label: category.name, href: `/catalog/${category.slug}/` }]
+            ? categoryTrail(category).map((entry) => ({
+                label: entry.name,
+                href: categoryUrl(entry),
+              }))
             : []),
           { label: product.title },
         ]}

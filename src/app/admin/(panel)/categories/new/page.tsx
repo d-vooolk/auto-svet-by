@@ -1,5 +1,6 @@
 import { CategoryForm } from "@/components/admin/CategoryForm";
 import { getCategories } from "@/lib/catalog";
+import { listCategoriesBrief } from "@/lib/store";
 
 export const metadata = { title: "Новый раздел" };
 
@@ -17,7 +18,7 @@ export default function NewCategoryPage() {
       category={{ id: "", slug: "", name: "", order: nextOrder }}
       thumbs={{}}
       productCount={0}
-      categories={categories}
+      categories={listCategoriesBrief()}
     />
   );
 }

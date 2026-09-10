@@ -6,10 +6,12 @@ import { CatalogControls, type CatalogItem } from "@/components/CatalogControls"
 import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
 import {
+  categoryUrl,
   getBrands,
-  getCategories,
   getCategoryCounts,
+  getChildCategories,
   getProducts,
+  getRootCategories,
   getSite,
 } from "@/lib/catalog";
 import { pluralize } from "@/lib/format";
@@ -28,7 +30,7 @@ export function generateMetadata(): Metadata {
 
 export default function CatalogPage() {
   const site = getSite();
-  const categories = getCategories();
+  const categories = getRootCategories();
   const counts = getCategoryCounts();
   const products = getProducts();
   const brands = getBrands();
@@ -58,19 +60,38 @@ export default function CatalogPage() {
       </header>
 
       {/* Ссылки на разделы: и навигация, и перелинковка для краулера. */}
-      <nav className="mb-8 flex flex-wrap gap-2" aria-label="Разделы каталога">
-        {categories.map((category) => (
-          <Link
-            key={category.id}
-            href={`/catalog/${category.slug}/`}
-            className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-800 transition-colors hover:border-brand-600 hover:text-brand-700"
-          >
-            {category.name}
-            <span className="tnum text-xs text-brand-300">
-              {counts[category.id] ?? 0}
-            </span>
-          </Link>
-        ))}
+      <nav className="mb-8 space-y-2" aria-label="Разделы каталога">
+        {categories.map((category) => {
+          const children = getChildCategories(category.id);
+          return (
+            <div key={category.id} className="flex flex-wrap items-center gap-2">
+              <Link
+                href={categoryUrl(category)}
+                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-800 transition-colors hover:border-brand-600 hover:text-brand-700"
+              >
+                {category.name}
+                <span className="tnum text-xs text-brand-300">
+                  {counts[category.id] ?? 0}
+                </span>
+              </Link>
+              {/* Подразделы стоят тут же, помельче: с этой страницы должен
+                  быть виден весь каталог, иначе краулеру придётся искать
+                  их через страницу родителя. */}
+              {children.map((child) => (
+                <Link
+                  key={child.id}
+                  href={categoryUrl(child)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-brand-100 px-3 py-1.5 text-sm text-brand-500 transition-colors hover:border-brand-300 hover:text-brand-800"
+                >
+                  {child.name}
+                  <span className="tnum text-xs text-brand-300">
+                    {counts[child.id] ?? 0}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          );
+        })}
       </nav>
 
       <CatalogControls

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getCategories } from "@/lib/catalog";
+import { categoryUrl, getCategories } from "@/lib/catalog";
 import { listCategoriesBrief } from "@/lib/store";
 
 export const metadata = { title: "Разделы" };
@@ -11,6 +11,10 @@ export const metadata = { title: "Разделы" };
  * Порядок задаётся числом в карточке раздела, а не перетаскиванием: разделов
  * пять-шесть штук, меняют их раз в год, и ради этого тащить в админку
  * библиотеку drag-and-drop незачем.
+ *
+ * Список уже приходит в порядке дерева (родитель, следом его подразделы),
+ * поэтому вложенность рисуется одним отступом по parentId — собирать
+ * иерархию здесь не нужно.
  */
 export default function CategoriesPage() {
   const brief = listCategoriesBrief();
@@ -42,7 +46,9 @@ export default function CategoriesPage() {
             return (
               <div
                 key={category.id}
-                className="flex items-center gap-3 px-4 py-3"
+                className={`flex items-center gap-3 py-3 pr-4 ${
+                  category.parentId ? "bg-brand-50/40 pl-10" : "pl-4"
+                }`}
               >
                 <span className="tnum w-8 shrink-0 text-xs text-brand-300">
                   {details?.order ?? "—"}
@@ -51,26 +57,41 @@ export default function CategoriesPage() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/admin/categories/${category.id}/`}
-                    className="block truncate text-sm font-semibold text-brand-900 hover:text-brand-700"
+                    className={`block truncate hover:text-brand-700 ${
+                      category.parentId
+                        ? "text-sm text-brand-700"
+                        : "text-sm font-semibold text-brand-900"
+                    }`}
                   >
+                    {category.parentId && (
+                      <span className="text-brand-300">└ </span>
+                    )}
                     {category.name}
                   </Link>
                   <p className="truncate text-xs text-brand-400">
-                    /catalog/{category.slug}/
+                    {details ? categoryUrl(details) : `/catalog/${category.slug}/`}
                     {details?.excerpt ? ` · ${details.excerpt}` : ""}
                   </p>
                 </div>
 
-                <Link
-                  href={`/admin/products/?category=${category.id}`}
-                  className="tnum shrink-0 text-sm text-brand-400 hover:text-brand-700"
-                  title="Товары раздела"
-                >
-                  {category.count} тов.
-                </Link>
+                {category.children > 0 ? (
+                  // У раздела с подразделами своих товаров не бывает —
+                  // показывать «0 тов.» было бы враньём про пустой раздел.
+                  <span className="shrink-0 text-xs text-brand-400">
+                    {category.children} подразд.
+                  </span>
+                ) : (
+                  <Link
+                    href={`/admin/products/?category=${category.id}`}
+                    className="tnum shrink-0 text-sm text-brand-400 hover:text-brand-700"
+                    title="Товары раздела"
+                  >
+                    {category.count} тов.
+                  </Link>
+                )}
 
                 <Link
-                  href={`/catalog/${category.slug}/`}
+                  href={details ? categoryUrl(details) : `/catalog/${category.slug}/`}
                   target="_blank"
                   rel="noopener"
                   title="Посмотреть на сайте"

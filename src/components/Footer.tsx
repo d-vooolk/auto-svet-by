@@ -2,11 +2,11 @@ import Link from "next/link";
 
 import { INFO_PAGES } from "@/components/Header";
 import { HeadlightIcon, PhoneIcon } from "@/components/icons";
-import { getCategories, getSite } from "@/lib/catalog";
+import { categoryUrl, getRootCategories, getSite } from "@/lib/catalog";
 
 export function Footer() {
   const site = getSite();
-  const categories = getCategories();
+  const categories = getRootCategories();
   // Считается на сборке и запекается в HTML — обновится при следующем деплое.
   const year = new Date().getFullYear();
 
@@ -34,7 +34,7 @@ export function Footer() {
             {categories.map((category) => (
               <li key={category.id}>
                 <Link
-                  href={`/catalog/${category.slug}/`}
+                  href={categoryUrl(category)}
                   className="text-brand-500 transition-colors hover:text-brand-900"
                 >
                   {category.name}

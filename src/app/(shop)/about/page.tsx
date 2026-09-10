@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { getCategories, getProducts, getSite } from "@/lib/catalog";
+import {
+  categoryUrl,
+  getProducts,
+  getRootCategories,
+  getSite,
+} from "@/lib/catalog";
 import { pluralize } from "@/lib/format";
 import { buildMetadata } from "@/lib/seo";
 
@@ -17,7 +22,7 @@ export function generateMetadata(): Metadata {
 
 export default function AboutPage() {
   const site = getSite();
-  const categories = getCategories();
+  const categories = getRootCategories();
   const products = getProducts();
 
   return (
@@ -70,7 +75,7 @@ export default function AboutPage() {
             {categories.map((category) => (
               <li key={category.id}>
                 <Link
-                  href={`/catalog/${category.slug}/`}
+                  href={categoryUrl(category)}
                   className="font-semibold text-brand-700 hover:underline"
                 >
                   {category.name}

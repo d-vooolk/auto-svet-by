@@ -26,6 +26,11 @@ function revalidateAll(paths: Iterable<string>): void {
   for (const path of paths) revalidatePath(path);
 }
 
+/** Адреса разделов приходят с конечным слешем, здесь он лишний. */
+function trim(path: string): string {
+  return path.length > 1 ? path.replace(/\/$/, "") : path;
+}
+
 /**
  * Товар создали, изменили или удалили.
  *
@@ -35,39 +40,42 @@ function revalidateAll(paths: Iterable<string>): void {
  */
 export function revalidateProduct(
   slug: string,
-  categorySlug: string | undefined,
-  previous?: { slug?: string; categorySlug?: string },
+  categoryPaths: string[],
+  previous?: { slug?: string; categoryPaths?: string[] },
 ): void {
   const paths = new Set(SHARED);
 
   paths.add(`/product/${slug}`);
-  if (categorySlug) paths.add(`/catalog/${categorySlug}`);
+  for (const path of categoryPaths) paths.add(trim(path));
 
   if (previous?.slug && previous.slug !== slug) {
     paths.add(`/product/${previous.slug}`);
   }
-  if (previous?.categorySlug && previous.categorySlug !== categorySlug) {
-    paths.add(`/catalog/${previous.categorySlug}`);
-  }
+  // Раздел у товара сменился: старая страница раздела и страница его
+  // родителя тоже пересобираются — там поменялись состав и счётчик.
+  for (const path of previous?.categoryPaths ?? []) paths.add(trim(path));
 
   revalidateAll(paths);
 }
 
-/** Раздел создали, изменили или удалили. */
+/**
+ * Раздел создали, изменили или удалили.
+ *
+ * `paths` — адреса всего затронутого поддерева (categorySubtreePaths):
+ * сам раздел, его родитель и его подразделы. Slug родителя входит в адрес
+ * каждого подраздела, поэтому переименование задевает их все.
+ */
 export function revalidateCategory(
-  slug: string,
-  previousSlug?: string,
+  paths: string[],
+  previousPaths: string[] = [],
 ): void {
-  const paths = new Set(SHARED);
-  paths.add(`/catalog/${slug}`);
-  if (previousSlug && previousSlug !== slug) {
-    paths.add(`/catalog/${previousSlug}`);
-  }
+  const all = new Set(SHARED);
+  for (const path of [...paths, ...previousPaths]) all.add(trim(path));
 
   // Название и порядок раздела стоят в меню, а оно в общем макете —
   // страницы товаров тоже надо пересобрать.
   revalidatePath("/product/[slug]", "page");
-  revalidateAll(paths);
+  revalidateAll(all);
 }
 
 /**

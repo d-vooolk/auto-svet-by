@@ -1,10 +1,16 @@
 import Link from "next/link";
 
 import { CartBadge } from "@/components/CartBadge";
-import { HeadlightIcon, PhoneIcon } from "@/components/icons";
+import { ChevronDownIcon, HeadlightIcon, PhoneIcon } from "@/components/icons";
 import { MobileMenu } from "@/components/MobileMenu";
 import { SearchBox } from "@/components/SearchBox";
-import { getCategories, getCategoryCounts, getSite } from "@/lib/catalog";
+import {
+  categoryUrl,
+  getCategoryCounts,
+  getChildCategories,
+  getRootCategories,
+  getSite,
+} from "@/lib/catalog";
 
 /** Статические страницы — в одном месте, чтобы меню и подвал не разъезжались. */
 export const INFO_PAGES = [
@@ -15,13 +21,20 @@ export const INFO_PAGES = [
 
 export function Header() {
   const site = getSite();
-  const categories = getCategories();
   const counts = getCategoryCounts();
 
-  const categoryLinks = categories.map((category) => ({
-    href: `/catalog/${category.slug}/`,
+  // Меню строится по дереву: раздел верхнего уровня и его подразделы.
+  // Считаем один раз здесь — и мобильное меню, и полоса категорий на
+  // десктопе показывают одно и то же.
+  const categoryLinks = getRootCategories().map((category) => ({
+    href: categoryUrl(category),
     label: category.menuName ?? category.name,
     count: counts[category.id] ?? 0,
+    children: getChildCategories(category.id).map((child) => ({
+      href: categoryUrl(child),
+      label: child.menuName ?? child.name,
+      count: counts[child.id] ?? 0,
+    })),
   }));
 
   return (
@@ -104,15 +117,45 @@ export function Header() {
           >
             Весь каталог
           </Link>
-          {categoryLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="rounded-control px-3 py-1.5 text-sm text-brand-500 transition-colors hover:bg-brand-50 hover:text-brand-900"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {categoryLinks.map((link) =>
+            link.children.length === 0 ? (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-control px-3 py-1.5 text-sm text-brand-500 transition-colors hover:bg-brand-50 hover:text-brand-900"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              // Подразделы раскрываются на наведение и на фокус с
+              // клавиатуры, без JS: панель всегда в разметке, меняется
+              // только видимость. Значит, её видит и краулер — ссылки на
+              // подразделы стоят на каждой странице сайта.
+              <div key={link.href} className="group relative">
+                <Link
+                  href={link.href}
+                  className="flex items-center gap-1 rounded-control px-3 py-1.5 text-sm text-brand-500 transition-colors group-hover:bg-brand-50 group-hover:text-brand-900 group-focus-within:bg-brand-50"
+                >
+                  {link.label}
+                  <ChevronDownIcon className="h-3.5 w-3.5 text-brand-300" />
+                </Link>
+                <div className="invisible absolute top-full left-0 z-40 min-w-52 rounded-control border border-brand-100 bg-white p-1.5 opacity-0 shadow-card-hover transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                  {link.children.map((child) => (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      className="flex items-center justify-between gap-4 rounded-control px-3 py-2 text-sm text-brand-600 transition-colors hover:bg-brand-50 hover:text-brand-900"
+                    >
+                      {child.label}
+                      <span className="tnum text-xs text-brand-300">
+                        {child.count}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ),
+          )}
         </div>
       </nav>
     </header>

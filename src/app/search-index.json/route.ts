@@ -17,6 +17,11 @@ export const dynamic = "force-static";
 export function GET() {
   const entries: SearchEntry[] = getProducts().map((product) => {
     const category = getCategoryById(product.categoryId);
+    // Родитель — тоже слово, по которому будут искать: товар из
+    // «Декоративных масок» должен находиться по запросу «аксессуары».
+    const parent = category?.parentId
+      ? getCategoryById(category.parentId)
+      : undefined;
     const entry = getImage(product.images[0]);
 
     // Всё, по чему имеет смысл искать, склеивается в одну строку: название,
@@ -25,6 +30,7 @@ export function GET() {
       product.title,
       product.brand ?? "",
       category?.name ?? "",
+      parent?.name ?? "",
       product.excerpt ?? "",
       product.tags.join(" "),
       product.specs.map((spec) => `${spec.name} ${spec.value}`).join(" "),

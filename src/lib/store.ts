@@ -49,6 +49,17 @@ export function saveProduct(input: unknown, previousId?: string): SaveResult {
     .get(product.categoryId);
   if (!category) {
     problems.push(`Раздел «${product.categoryId}» не найден`);
+  } else {
+    // Товары живут только в листьях дерева: у раздела с подразделами
+    // страница занята плиткой подразделов, товару там не показаться.
+    const { n } = db
+      .prepare("SELECT COUNT(*) AS n FROM categories WHERE parent_id = ?")
+      .get(product.categoryId) as { n: number };
+    if (n > 0) {
+      problems.push(
+        `У раздела «${product.categoryId}» есть подразделы — выберите один из них`,
+      );
+    }
   }
 
   const idTaken = db
@@ -149,7 +160,85 @@ export function reorderProducts(ids: string[]): void {
 /* Категории                                                           */
 /* ------------------------------------------------------------------ */
 
-export function saveCategory(input: unknown, previousId?: string): SaveResult {
+/**
+ * Правила дерева разделов. Проверяются при каждом сохранении.
+ *
+ * Их четыре, и все они про одно: дерево должно оставаться ровно
+ * двухуровневым, а товары — лежать только в листьях.
+ *
+ * Почему товары не могут лежать в разделе с подразделами: страница такого
+ * раздела показывает плитку подразделов, и товары рядом с ней оказались бы
+ * ни в одном из них — попасть на них можно было бы только с этой страницы,
+ * и ни в одну хлебную крошку они бы не легли.
+ */
+function checkParent(
+  category: Category,
+  previousId?: string,
+  adoptProducts = false,
+): string[] {
+  const db = getDb();
+  const problems: string[] = [];
+  const id = previousId ?? category.id;
+
+  if (category.parentId) {
+    if (category.parentId === id) {
+      problems.push("Раздел не может быть вложен сам в себя");
+      return problems;
+    }
+
+    const parent = db
+      .prepare("SELECT id, parent_id FROM categories WHERE id = ?")
+      .get(category.parentId) as
+      | { id: string; parent_id: string | null }
+      | undefined;
+
+    if (!parent) {
+      problems.push(`Родительский раздел «${category.parentId}» не найден`);
+      return problems;
+    }
+    if (parent.parent_id) {
+      problems.push(
+        "Подраздел нельзя вложить в другой подраздел — уровня всего два",
+      );
+    }
+
+    const { n: inParent } = db
+      .prepare("SELECT COUNT(*) AS n FROM products WHERE category_id = ?")
+      .get(parent.id) as { n: number };
+    if (inParent > 0 && !adoptProducts) {
+      problems.push(
+        `В разделе «${parent.id}» лежит ${pluralize(inParent, "товар", "товара", "товаров")}. ` +
+          "Товары могут лежать только в разделах без подразделов — перенесите их в этот подраздел или в другой раздел.",
+      );
+    }
+
+    const { n: children } = db
+      .prepare("SELECT COUNT(*) AS n FROM categories WHERE parent_id = ?")
+      .get(id) as { n: number };
+    if (children > 0) {
+      problems.push(
+        "У раздела есть свои подразделы — его нельзя сделать подразделом",
+      );
+    }
+  }
+
+  return problems;
+}
+
+/**
+ * Сохранение раздела.
+ *
+ * `adoptProducts` — забрать товары родителя в этот подраздел. Без такой
+ * возможности первый подраздел в непустом разделе создать невозможно:
+ * товары нельзя оставить в родителе, но и перенести их некуда — подраздела
+ * ещё нет. Замкнутый круг, в который упирается любой, кто решил разбить
+ * разросшийся раздел на части.
+ */
+export function saveCategory(
+  input: unknown,
+  previousId?: string,
+  adoptProducts = false,
+): SaveResult {
   const parsed = categorySchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, problems: describe(parsed.error.issues) };
@@ -172,22 +261,50 @@ export function saveCategory(input: unknown, previousId?: string): SaveResult {
     );
   }
 
+  problems.push(...checkParent(category, previousId, adoptProducts));
+
   if (problems.length) return { ok: false, problems };
 
-  db.prepare(
-    `INSERT INTO categories (id, slug, name, sort_order, data, updated_at)
-     VALUES (@id, @slug, @name, @order, @data, @updatedAt)
+  const adopted =
+    adoptProducts && category.parentId
+      ? (db
+          .prepare("SELECT id, data FROM products WHERE category_id = ?")
+          .all(category.parentId) as Array<{ id: string; data: string }>)
+      : [];
+
+  const save = db.prepare(
+    `INSERT INTO categories (id, slug, name, parent_id, sort_order, data, updated_at)
+     VALUES (@id, @slug, @name, @parentId, @order, @data, @updatedAt)
      ON CONFLICT(id) DO UPDATE SET
-       slug = @slug, name = @name, sort_order = @order,
+       slug = @slug, name = @name, parent_id = @parentId, sort_order = @order,
        data = @data, updated_at = @updatedAt`,
-  ).run({
-    id: category.id,
-    slug: category.slug,
-    name: category.name,
-    order: category.order ?? 999,
-    data: JSON.stringify(category),
-    updatedAt: Date.now(),
-  });
+  );
+
+  const move = db.prepare(
+    "UPDATE products SET category_id = ?, data = ?, updated_at = ? WHERE id = ?",
+  );
+  const now = Date.now();
+
+  // Одной транзакцией: подраздел, забравший товары наполовину, оставил бы
+  // родителя с подразделом и товарами разом — то есть в состоянии, которого
+  // все эти проверки и не допускают.
+  db.transaction(() => {
+    save.run({
+      id: category.id,
+      slug: category.slug,
+      name: category.name,
+      parentId: category.parentId ?? null,
+      order: category.order ?? 999,
+      data: JSON.stringify(category),
+      updatedAt: now,
+    });
+
+    for (const row of adopted) {
+      const product = JSON.parse(row.data) as Product;
+      product.categoryId = category.id;
+      move.run(category.id, JSON.stringify(product), now, row.id);
+    }
+  })();
 
   bumpCatalogVersion();
   return { ok: true };
@@ -203,6 +320,9 @@ export function saveCategory(input: unknown, previousId?: string): SaveResult {
  * `moveTo` — раздел, в который уедут товары. Без него раздел с товарами не
  * удаляется: товар без существующего раздела пропадает из меню и с витрины,
  * но остаётся в базе — искать его потом негде.
+ *
+ * Подразделы удаляемого раздела поднимаются на верхний уровень. Их адреса
+ * при этом укорачиваются, о чём админка предупреждает до удаления.
  *
  * Перенос и удаление идут одной транзакцией: если раздел исчезнет, а товары
  * переехать не успеют, они как раз и окажутся в этом подвешенном состоянии.
@@ -227,14 +347,33 @@ export function deleteCategory(id: string, moveTo?: string): SaveResult {
     }
     const target = db
       .prepare("SELECT id FROM categories WHERE id = ?")
-      .get(moveTo);
+      .get(moveTo) as { id: string } | undefined;
     if (!target) {
       return { ok: false, problems: ["Раздел, в который переносим товары, не найден"] };
+    }
+    const { n: targetChildren } = db
+      .prepare("SELECT COUNT(*) AS n FROM categories WHERE parent_id = ?")
+      .get(moveTo) as { n: number };
+    if (targetChildren > 0) {
+      return {
+        ok: false,
+        problems: [
+          "У раздела, в который переносим, есть подразделы — выберите один из них",
+        ],
+      };
     }
   }
 
   const products = db
     .prepare("SELECT id, data FROM products WHERE category_id = ?")
+    .all(id) as Array<{ id: string; data: string }>;
+
+  // Подразделы удаляемого раздела поднимаются на верхний уровень вместе со
+  // своими товарами. Других вариантов у них нет: вложить их в чужой раздел
+  // — решение за админа, а удалить вместе с родителем значило бы потерять
+  // товары, о которых никто не спрашивал.
+  const children = db
+    .prepare("SELECT id, data FROM categories WHERE parent_id = ?")
     .all(id) as Array<{ id: string; data: string }>;
 
   // Правим и колонку, и JSON: по колонке идут выборки, а JSON — источник
@@ -244,11 +383,20 @@ export function deleteCategory(id: string, moveTo?: string): SaveResult {
   );
   const now = Date.now();
 
+  const promote = db.prepare(
+    "UPDATE categories SET parent_id = NULL, data = ?, updated_at = ? WHERE id = ?",
+  );
+
   db.transaction(() => {
     for (const row of products) {
       const product = JSON.parse(row.data) as Product;
       product.categoryId = moveTo!;
       move.run(moveTo, JSON.stringify(product), now, row.id);
+    }
+    for (const row of children) {
+      const child = JSON.parse(row.data) as Category;
+      delete child.parentId;
+      promote.run(JSON.stringify(child), now, row.id);
     }
     db.prepare("DELETE FROM categories WHERE id = ?").run(id);
   })();
@@ -302,20 +450,37 @@ function describe(issues: Array<{ path: PropertyKey[]; message: string }>): stri
 }
 
 /** Списки для выпадающих меню админки — без разбора всего каталога схемой. */
-export function listCategoriesBrief(): Array<{
+export interface CategoryBrief {
   id: string;
   name: string;
   slug: string;
+  parentId: string | null;
+  /** Товаров непосредственно в этом разделе, без подразделов. */
   count: number;
-}> {
-  return getDb()
+  children: number;
+}
+
+/**
+ * Плоский список разделов для админки — уже в порядке дерева: родитель,
+ * следом его подразделы. Собирать иерархию в каждом шаблоне не нужно,
+ * достаточно посмотреть на parentId, чтобы решить, делать ли отступ.
+ */
+export function listCategoriesBrief(): CategoryBrief[] {
+  const rows = getDb()
     .prepare(
-      `SELECT c.id, c.name, c.slug,
-              (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) AS count
+      `SELECT c.id, c.name, c.slug, c.parent_id AS parentId,
+              (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) AS count,
+              (SELECT COUNT(*) FROM categories k WHERE k.parent_id = c.id) AS children
          FROM categories c
         ORDER BY c.sort_order, c.name`,
     )
-    .all() as Array<{ id: string; name: string; slug: string; count: number }>;
+    .all() as CategoryBrief[];
+
+  const roots = rows.filter((row) => !row.parentId);
+  return roots.flatMap((root) => [
+    root,
+    ...rows.filter((row) => row.parentId === root.id),
+  ]);
 }
 
 export interface ProductBrief {

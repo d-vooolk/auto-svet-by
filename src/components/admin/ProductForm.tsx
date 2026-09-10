@@ -27,7 +27,13 @@ import { toSlug } from "@/lib/slug";
 interface ProductFormProps {
   /** Существующий товар или заготовка нового. */
   product: Product;
-  categories: Array<{ id: string; name: string }>;
+  /** Список уже в порядке дерева: родитель, следом его подразделы. */
+  categories: Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    children: number;
+  }>;
   /** Пусто при создании: у нового товара ещё нет прежнего кода. */
   previousId?: string;
   /** Готовые ссылки на миниатюры уже выбранных фото. */
@@ -146,11 +152,20 @@ export function ProductForm({
               className="field"
             >
               <option value="">— выберите —</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
+              {categories.map((category) =>
+                category.children > 0 ? (
+                  // Раздел с подразделами — только заголовок группы: товары
+                  // лежат в листьях, на странице такого раздела для них нет
+                  // места, там плитка подразделов.
+                  <option key={category.id} value="" disabled>
+                    {category.name}
+                  </option>
+                ) : (
+                  <option key={category.id} value={category.id}>
+                    {category.parentId ? `   └ ${category.name}` : category.name}
+                  </option>
+                ),
+              )}
             </select>
           </Field>
 

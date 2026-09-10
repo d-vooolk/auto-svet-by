@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { getCategories, getSite } from "@/lib/catalog";
+import { categoryUrl, getRootCategories, getSite } from "@/lib/catalog";
 
 /**
  * 404 для адресов, не совпавших ни с одним маршрутом.
@@ -13,7 +13,7 @@ import { getCategories, getSite } from "@/lib/catalog";
  */
 export default function NotFound() {
   const site = getSite();
-  const categories = getCategories();
+  const categories = getRootCategories();
 
   return (
     <div className="flex min-h-dvh flex-col">
@@ -46,7 +46,7 @@ export default function NotFound() {
               {categories.map((category) => (
                 <li key={category.id}>
                   <Link
-                    href={`/catalog/${category.slug}/`}
+                    href={categoryUrl(category)}
                     className="inline-flex rounded-xl border border-brand-200 bg-white px-3.5 py-2 text-sm text-brand-800 hover:border-brand-600 hover:text-brand-700"
                   >
                     {category.name}

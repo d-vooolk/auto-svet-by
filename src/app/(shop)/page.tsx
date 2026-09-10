@@ -12,10 +12,11 @@ import {
   TruckIcon,
 } from "@/components/icons";
 import {
-  getCategories,
+  categoryUrl,
   getCategoryCounts,
   getFeaturedProducts,
   getProducts,
+  getRootCategories,
   getSite,
 } from "@/lib/catalog";
 import { pluralize } from "@/lib/format";
@@ -68,7 +69,7 @@ function catalogSpecs(): string[] {
 
 export default function HomePage() {
   const site = getSite();
-  const categories = getCategories();
+  const categories = getRootCategories();
   const counts = getCategoryCounts();
   const featured = getFeaturedProducts(8);
   const specs = catalogSpecs();
@@ -249,7 +250,7 @@ export default function HomePage() {
           {categories.map((category) => (
             <Link
               key={category.id}
-              href={`/catalog/${category.slug}/`}
+              href={categoryUrl(category)}
               className="group card card-link reveal flex gap-5 overflow-hidden p-5"
             >
               <span className="photo-bed flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-control">

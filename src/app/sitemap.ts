@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import {
+  categoryUrl,
   getCategories,
   getLastModified,
   getPageDates,
@@ -39,11 +40,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    // Адрес подраздела вложенный, поэтому его собирает categoryUrl.
+    // Приоритет у подразделов ниже: они уже, и трафик по ним реже.
     ...getCategories().map((category) => ({
-      url: absoluteUrl(`/catalog/${category.slug}/`),
-      lastModified: dateFor(`/catalog/${category.slug}/`),
+      url: absoluteUrl(categoryUrl(category)),
+      lastModified: dateFor(categoryUrl(category)),
       changeFrequency: "weekly" as const,
-      priority: 0.9,
+      priority: category.parentId ? 0.8 : 0.9,
     })),
     ...getProducts().map((product) => ({
       url: absoluteUrl(`/product/${product.slug}/`),

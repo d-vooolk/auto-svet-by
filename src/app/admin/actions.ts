@@ -5,7 +5,12 @@ import { join } from "node:path";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
-import { getCategoryById, invalidateCatalog } from "@/lib/catalog";
+import {
+  categoryPaths,
+  categorySubtreePaths,
+  getChildCategories,
+  invalidateCatalog,
+} from "@/lib/catalog";
 import { removeImageFiles } from "@/lib/image-pipeline.mjs";
 import { deleteImage, getImage, imageUsage } from "@/lib/images";
 import { isOrderStatus } from "@/lib/order-types";
@@ -106,9 +111,8 @@ export async function saveProductAction(
   // Адреса, по которым товар был доступен до правки: если поменяли slug или
   // перенесли в другой раздел, старые страницы тоже надо пересобрать.
   const before = previousId ? getProductRaw(previousId) : null;
-  const beforeCategory = before
-    ? getCategoryRaw(before.categoryId)?.slug
-    : undefined;
+  // Считаем до сохранения: после него дерево разделов уже другое.
+  const beforePaths = before ? categoryPaths(before.categoryId) : [];
 
   const result = saveProduct(input, previousId);
   if (!result.ok) return toState(result);
@@ -116,9 +120,9 @@ export async function saveProductAction(
   const product = input as { slug: string; categoryId: string };
   invalidateCatalog();
 
-  revalidateProduct(product.slug, getCategoryById(product.categoryId)?.slug, {
+  revalidateProduct(product.slug, categoryPaths(product.categoryId), {
     slug: before?.slug,
-    categorySlug: beforeCategory,
+    categoryPaths: beforePaths,
   });
 
   return ok();
@@ -130,10 +134,10 @@ export async function deleteProductAction(id: string): Promise<FormState> {
   const product = getProductRaw(id);
   if (!product) return fail(["Товар не найден"]);
 
-  const categorySlug = getCategoryRaw(product.categoryId)?.slug;
+  const paths = categoryPaths(product.categoryId);
   deleteProduct(id);
   invalidateCatalog();
-  revalidateProduct(product.slug, categorySlug);
+  revalidateProduct(product.slug, paths);
 
   redirect("/admin/products/");
 }
@@ -150,7 +154,7 @@ export async function toggleProductAction(
 
   setProductFlag(id, flag, value);
   invalidateCatalog();
-  revalidateProduct(product.slug, getCategoryRaw(product.categoryId)?.slug);
+  revalidateProduct(product.slug, categoryPaths(product.categoryId));
 
   return ok();
 }
@@ -167,7 +171,7 @@ export async function reorderProductsAction(ids: string[]): Promise<FormState> {
   const first = getProductRaw(ids[0] ?? "");
   revalidateProduct(
     first?.slug ?? "",
-    first ? getCategoryRaw(first.categoryId)?.slug : undefined,
+    first ? categoryPaths(first.categoryId) : [],
   );
 
   return ok();
@@ -180,16 +184,28 @@ export async function reorderProductsAction(ids: string[]): Promise<FormState> {
 export async function saveCategoryAction(
   input: unknown,
   previousId?: string,
+  /** Забрать товары родителя в этот подраздел — см. saveCategory. */
+  adoptProducts = false,
 ): Promise<FormState> {
   await requireAdmin();
 
-  const before = previousId ? getCategoryRaw(previousId) : null;
+  // Адреса поддерева до правки: если поменяли slug или переложили раздел
+  // в другого родителя, старые страницы тоже надо пересобрать.
+  const beforePaths = previousId ? categorySubtreePaths(previousId) : [];
 
-  const result = saveCategory(input, previousId);
+  const result = saveCategory(input, previousId, adoptProducts);
   if (!result.ok) return toState(result);
 
   invalidateCatalog();
-  revalidateCategory((input as { slug: string }).slug, before?.slug);
+  revalidateCategory(
+    [
+      ...categorySubtreePaths((input as { id: string }).id),
+      // Товары могли уехать из родителя в новый подраздел — его страница
+      // тоже поменялась.
+      ...categoryPaths((input as { parentId?: string }).parentId),
+    ],
+    beforePaths,
+  );
 
   return ok();
 }
@@ -210,17 +226,23 @@ export async function deleteCategoryAction(
   const category = getCategoryRaw(id);
   if (!category) return fail(["Раздел не найден"]);
 
-  const target = moveTo ? getCategoryRaw(moveTo) : null;
-  if (moveTo && !target) return fail(["Раздел, в который переносим товары, не найден"]);
+  if (moveTo && !getCategoryRaw(moveTo)) {
+    return fail(["Раздел, в который переносим товары, не найден"]);
+  }
+
+  // Адреса собираем до удаления: после него ни раздела, ни его подразделов
+  // в дереве уже нет, а пересобрать их страницы всё равно надо.
+  const gone = categorySubtreePaths(id);
+  const target = moveTo ? categoryPaths(moveTo) : [];
+  // Подразделы поднимутся на верхний уровень, то есть получат новые,
+  // короткие адреса — их тоже надо собрать.
+  const promoted = getChildCategories(id).map((child) => `/catalog/${child.slug}/`);
 
   const result = deleteCategory(id, moveTo);
   if (!result.ok) return toState(result);
 
   invalidateCatalog();
-  revalidateCategory(category.slug);
-  // Товары переехали: в приёмнике их стало больше, а на страницах самих
-  // товаров поменялись хлебные крошки.
-  if (target) revalidateCategory(target.slug);
+  revalidateCategory([...gone, ...promoted, ...target]);
 
   redirect("/admin/categories/");
 }

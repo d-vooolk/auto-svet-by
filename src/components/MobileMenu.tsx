@@ -10,6 +10,8 @@ interface MenuLink {
   href: string;
   label: string;
   count?: number;
+  /** Подразделы. Раскрывать их нечем — на узком экране показываем сразу. */
+  children?: MenuLink[];
 }
 
 interface MobileMenuProps {
@@ -103,6 +105,30 @@ export function MobileMenu({
                           </span>
                         )}
                       </Link>
+
+                      {/* Подразделы развёрнуты сразу, без «гармошки»: их
+                          единицы, а лишнее нажатие на телефоне дороже
+                          сэкономленной высоты. */}
+                      {link.children && link.children.length > 0 && (
+                        <ul className="mb-1 ml-3 border-l border-brand-100 pl-2">
+                          {link.children.map((child) => (
+                            <li key={child.href}>
+                              <Link
+                                href={child.href}
+                                onClick={() => setOpen(false)}
+                                className="flex items-center justify-between rounded-xl px-3 py-2 text-sm text-brand-600 hover:bg-brand-50"
+                              >
+                                {child.label}
+                                {child.count !== undefined && (
+                                  <span className="tnum text-xs text-brand-300">
+                                    {child.count}
+                                  </span>
+                                )}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </li>
                   ))}
                 </ul>
