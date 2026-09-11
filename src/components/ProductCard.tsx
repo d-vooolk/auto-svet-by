@@ -1,10 +1,7 @@
 import Link from "next/link";
 
 import { AddToCartButton } from "@/components/AddToCartButton";
-import { ContactButtons } from "@/components/ContactButtons";
 import { Picture } from "@/components/Picture";
-import { getSite } from "@/lib/catalog";
-import { getMessengers, productMessage } from "@/lib/contacts";
 import { formatPrice } from "@/lib/format";
 import { pickUrl } from "@/lib/image-types";
 import { getImage } from "@/lib/images";
@@ -23,11 +20,11 @@ import {
  * У товара с опциями цену показываем диапазоном («от 84,90 р.»), а вместо
  * кнопки даём ссылку на страницу товара: цоколь с карточки не выберешь.
  *
- * Кнопки мессенджеров открывают чат с уже написанным вопросом по этому
- * товару — название, цена и ссылка. Для половины покупателей автосвета это
- * основной способ заказа: они не оформляют корзину, а спрашивают «подойдёт
- * ли к моей машине», и без заготовки менеджеру приходится выяснять, о чём
- * вообще речь.
+ * Кнопок мессенджеров здесь нет намеренно. Они были, и в сетке из двадцати
+ * карточек получалось шестьдесят одинаковых кружков — рябь, за которой не
+ * видно товара. Спрашивают о конкретной позиции всё равно с её страницы,
+ * там эти кнопки и стоят. Плюс панель связи висит справа на каждой
+ * странице, так что написать можно и не заходя в карточку.
  */
 
 interface ProductCardProps {
@@ -52,21 +49,15 @@ export function ProductCard({
 
   const variant = resolveVariant(product, defaultSelection(product));
 
-  const site = getSite();
-  const messengers = getMessengers(
-    site,
-    productMessage(
-      site,
-      product,
-      `${range.varies ? "от " : ""}${formatPrice(range.min, currencySymbol)}`,
-    ),
-  );
-
   return (
     <article className="group card card-link reveal flex w-full flex-col overflow-hidden">
+      {/* Фото во всю ширину карточки: ни подложки, ни внутреннего отступа.
+          Серый градиент .photo-bed по краям читался как рамка вокруг
+          снимка, а отступ в пять единиц добавлял к ней ещё и поля — товар
+          на карточке выглядел вставленным в паспарту. */}
       <Link
         href={href}
-        className="photo-bed relative block aspect-square overflow-hidden"
+        className="relative block aspect-square overflow-hidden bg-white"
         tabIndex={-1}
         aria-hidden="true"
       >
@@ -75,7 +66,7 @@ export function ProductCard({
           alt=""
           sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 280px"
           priority={priority}
-          className="h-full w-full object-contain p-5 transition-transform duration-300 ease-out group-hover:scale-[1.03]"
+          className="h-full w-full object-contain transition-transform duration-300 ease-out group-hover:scale-[1.03]"
         />
         {product.badge && inStock && (
           <span className="badge absolute top-3 left-3 bg-accent-400 text-brand-900">
@@ -161,13 +152,6 @@ export function ProductCard({
                 imageUrl: pickUrl(entry, 200),
               }}
             />
-          )}
-
-          {messengers.length > 0 && (
-            <div className="mt-3 flex items-center justify-center gap-2 border-t border-brand-100 pt-3">
-              <span className="text-xs text-brand-400">Спросить:</span>
-              <ContactButtons channels={messengers} size={26} />
-            </div>
           )}
         </div>
       </div>

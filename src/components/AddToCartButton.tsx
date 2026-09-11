@@ -62,9 +62,24 @@ export function AddToCartButton({
     );
   }
 
+  /*
+   * В карточке каталога счётчик и ссылка стоят друг под другом, а не в
+   * строку. В сетке на телефоне карточка шириной меньше половины экрана —
+   * счётчик со стрелками занимал её целиком, а кнопка «В корзину» уезжала
+   * за правый край и становилась недоступной. Столбиком обе помещаются при
+   * любой ширине.
+   *
+   * На странице товара места хватает, там остаётся строка.
+   */
   return (
-    <div className={`flex items-stretch gap-2 ${compact ? "" : "w-full"}`}>
-      <div className="flex shrink-0 items-center rounded-control border border-brand-200 bg-white">
+    <div
+      className={`flex w-full gap-2 ${compact ? "flex-col" : "items-stretch"}`}
+    >
+      <div
+        className={`flex items-center rounded-control border border-brand-200 bg-white ${
+          compact ? "w-full justify-between" : "shrink-0"
+        }`}
+      >
         <button
           type="button"
           onClick={() => setQty(item.key, inCart - 1)}
@@ -74,7 +89,7 @@ export function AddToCartButton({
           <MinusIcon className="h-4 w-4" />
         </button>
         <span
-          className="tnum w-7 text-center text-sm font-semibold text-brand-900"
+          className="tnum min-w-7 text-center text-sm font-semibold text-brand-900"
           aria-live="polite"
           aria-label={`В корзине: ${inCart}`}
         >
@@ -92,7 +107,9 @@ export function AddToCartButton({
 
       <Link
         href="/cart/"
-        className="btn-primary min-w-0 flex-1 px-3 text-xs whitespace-nowrap sm:text-sm"
+        className={`btn-primary min-w-0 px-3 whitespace-nowrap ${
+          compact ? "w-full text-xs" : "flex-1 text-sm"
+        }`}
       >
         <CartIcon className="h-4 w-4 shrink-0" />
         {compact ? "В корзину" : "Перейти в корзину"}

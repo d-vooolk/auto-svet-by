@@ -37,7 +37,7 @@ export function CategoryTile({ category, priority = false }: CategoryTileProps) 
           alt=""
           sizes="(max-width: 640px) 45vw, (max-width: 1024px) 30vw, 320px"
           priority={priority}
-          className="h-full w-full object-contain p-4 transition-transform duration-300 ease-out group-hover:scale-105"
+          className="h-full w-full object-contain transition-transform duration-300 ease-out group-hover:scale-105"
         />
       </span>
 

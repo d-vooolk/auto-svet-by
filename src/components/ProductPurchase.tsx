@@ -20,6 +20,7 @@ import { formatPrice } from "@/lib/format";
 import { pickUrl, type ImageMap } from "@/lib/image-types";
 import type { Product } from "@/lib/schema";
 import { defaultSelection, resolveVariant, type Selection } from "@/lib/variant";
+import { useCart, useHydrated } from "@/store/cart";
 
 /**
  * Галерея, выбор опций и кнопка заказа.
@@ -91,6 +92,21 @@ export function ProductPurchase({
   const [lightbox, setLightbox] = useState(false);
 
   const variant = resolveVariant(product, selection);
+
+  /*
+   * Сколько этого варианта уже лежит в корзине.
+   *
+   * От этого зависит, показывать ли выбор количества слева от кнопки. Пока
+   * товара в корзине нет, поле нужно: оно говорит, сколько штук положить.
+   * Как только он там оказался, кнопка сама превращается в счётчик — и два
+   * поля ввода количества подряд начинают спорить друг с другом: в одном
+   * «1», в другом «3», и непонятно, какое из них настоящее.
+   */
+  const inCart = useCart(
+    (state) => state.items.find((line) => line.key === variant.key)?.qty ?? 0,
+  );
+  const hydrated = useHydrated();
+  const choosingQty = !hydrated || inCart === 0;
   const gallery = variant.images;
 
   // Активное фото сбрасывается, когда сменился набор фотографий: после
@@ -120,6 +136,29 @@ export function ProductPurchase({
     if (count < 2) return;
     setActive((current) => shift(current, galleryKey, count, delta));
   };
+
+  /*
+   * Пока фото открыто на весь экран, страница под ним не прокручивается.
+   *
+   * Без этого колесо мыши и пролистывание пальцем уезжали в страницу за
+   * фоном: на телефоне свайп по фото листал каталог, а закрыв окно, человек
+   * оказывался совсем не там, где был.
+   *
+   * Отступ справа компенсирует исчезнувшую полосу прокрутки — иначе вся
+   * страница дёргается вправо на её ширину в момент открытия.
+   */
+  useEffect(() => {
+    if (!lightbox) return;
+    const previousOverflow = document.body.style.overflow;
+    const previousPadding = document.body.style.paddingRight;
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    document.body.style.paddingRight = scrollbar > 0 ? `${scrollbar}px` : previousPadding;
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPadding;
+    };
+  }, [lightbox]);
 
   // Escape закрывает фото на весь экран, стрелки листают галерею — на
   // полноэкранном просмотре это первое, что пробует человек с клавиатурой.
@@ -156,10 +195,12 @@ export function ProductPurchase({
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-12">
       {/* ---------------------------- Галерея ---------------------------- */}
       <div>
+        {/* Ни серой подложки, ни рамки, ни внутреннего отступа: вместе они
+            читались как паспарту вокруг снимка, а не как фото товара. */}
         <button
           type="button"
           onClick={() => mainEntry && setLightbox(true)}
-          className="photo-bed relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-card border border-brand-100"
+          className="relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-card bg-white"
           aria-label="Открыть фото на весь экран"
         >
           <Picture
@@ -167,7 +208,7 @@ export function ProductPurchase({
             alt={altText}
             sizes="(max-width: 1024px) 100vw, 620px"
             priority
-            className="h-full w-full object-contain p-6"
+            className="h-full w-full object-contain"
           />
           {!variant.inStock && (
             <span className="badge absolute top-4 left-4 bg-brand-800 text-white">
@@ -190,7 +231,9 @@ export function ProductPurchase({
                 aria-selected={position === index}
                 aria-label={`Фото ${position + 1} из ${gallery.length}`}
                 onClick={() => setIndex(position)}
-                className={`photo-bed aspect-square overflow-hidden rounded-lg border-2 transition-colors ${
+                // У миниатюр рамка остаётся: она здесь не украшение, а
+                // единственный признак того, какая из них выбрана.
+                className={`aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors ${
                   position === index
                     ? "border-brand-600"
                     : "border-brand-100 hover:border-brand-300"
@@ -201,7 +244,7 @@ export function ProductPurchase({
                     entry={images[path]}
                     alt=""
                     sizes="90px"
-                    className="h-full w-full object-contain p-1.5"
+                    className="h-full w-full object-contain"
                   />
                 ) : (
                   <ImagePlaceholder className="h-full w-full" />
@@ -302,33 +345,35 @@ export function ProductPurchase({
 
         {/* --------------------------- Заказ ---------------------------- */}
         <div className="mb-4 flex gap-3">
-          <div className="flex items-center rounded-xl border border-brand-200">
-            <button
-              type="button"
-              onClick={() => setQty((current) => Math.max(1, current - 1))}
-              disabled={qty <= 1}
-              className="p-3 text-brand-500 hover:text-brand-900 disabled:opacity-40"
-              aria-label="Уменьшить количество"
-            >
-              <MinusIcon className="h-4 w-4" />
-            </button>
-            <span
-              className="tnum w-10 text-center text-sm font-semibold"
-              aria-live="polite"
-              aria-label={`Количество: ${qty}`}
-            >
-              {qty}
-            </span>
-            <button
-              type="button"
-              onClick={() => setQty((current) => Math.min(99, current + 1))}
-              disabled={qty >= 99}
-              className="p-3 text-brand-500 hover:text-brand-900 disabled:opacity-40"
-              aria-label="Увеличить количество"
-            >
-              <PlusIcon className="h-4 w-4" />
-            </button>
-          </div>
+          {choosingQty && (
+            <div className="flex items-center rounded-xl border border-brand-200">
+              <button
+                type="button"
+                onClick={() => setQty((current) => Math.max(1, current - 1))}
+                disabled={qty <= 1}
+                className="p-3 text-brand-500 hover:text-brand-900 disabled:opacity-40"
+                aria-label="Уменьшить количество"
+              >
+                <MinusIcon className="h-4 w-4" />
+              </button>
+              <span
+                className="tnum w-10 text-center text-sm font-semibold"
+                aria-live="polite"
+                aria-label={`Количество: ${qty}`}
+              >
+                {qty}
+              </span>
+              <button
+                type="button"
+                onClick={() => setQty((current) => Math.min(99, current + 1))}
+                disabled={qty >= 99}
+                className="p-3 text-brand-500 hover:text-brand-900 disabled:opacity-40"
+                aria-label="Увеличить количество"
+              >
+                <PlusIcon className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
           <AddToCartButton
             className="btn-primary flex-1"
