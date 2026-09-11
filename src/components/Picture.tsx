@@ -9,6 +9,14 @@ import { srcSet, type ImageEntry } from "@/lib/image-types";
  *
  * Если записи в манифесте нет (фото ещё не положили в ./media), рисуется
  * аккуратная заглушка вместо битой картинки.
+ *
+ * Размытой подложки под фото здесь нет, и это сознательно. Раньше в style
+ * подставлялся entry.blur с background-size: cover — задумка была показать
+ * силуэт, пока грузится основное фото. Но почти все картинки в магазине
+ * выводятся с object-contain: фото вписывается в рамку и по краям остаются
+ * поля, сквозь которые размытая подложка видна всегда, а не «пока грузится».
+ * Выглядело это как вторая, мутная копия товара за первой. Скачка вёрстки
+ * без подложки тоже нет — его держат width и height из манифеста.
  */
 
 interface PictureProps {
@@ -49,13 +57,6 @@ export function Picture({
         fetchPriority={priority ? "high" : "auto"}
         decoding={priority ? "sync" : "async"}
         className={className}
-        // Размытая версия под фото: пока грузится основное, на месте картинки
-        // не белый прямоугольник, а её силуэт. Заодно нет скачка вёрстки.
-        style={{
-          backgroundImage: entry.blur ? `url(${entry.blur})` : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       />
     </picture>
   );

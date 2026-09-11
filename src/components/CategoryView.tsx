@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CatalogControls, type CatalogItem } from "@/components/CatalogControls";
+import { CategoryGrid } from "@/components/CategoryTile";
 import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
 import {
   categoryTrail,
   categoryUrl,
   getBrands,
-  getCategoryCounts,
   getChildCategories,
   getProductsInCategory,
   getSite,
@@ -27,9 +26,13 @@ import { hasAnyInStock, priceRange } from "@/lib/variant";
  * же, и расходиться им незачем: разойдясь, они разойдутся молча, и заметит
  * это не разработчик, а поисковик.
  *
- * Разница только в содержимом: у раздела с подразделами вместо сетки
- * товаров плитка подразделов. Своих товаров у такого раздела не бывает —
- * store.ts не даёт их туда положить.
+ * У раздела с подразделами над сеткой появляется плитка подразделов, а в
+ * самой сетке лежат товары всех его подразделов сразу. Раньше такая
+ * страница показывала только плитку: своих товаров у родителя нет (store.ts
+ * не даёт их туда положить), и «Аксессуары» открывались двумя ссылками
+ * вместо витрины. Товар при этом виден на двух страницах — в подразделе и у
+ * родителя, — но канонический адрес у него один, и он не здесь, а на
+ * /product/…, так что склейки в поиске это не создаёт.
  */
 
 export function categoryMetadata(category: Category): Metadata {
@@ -61,7 +64,6 @@ export function CategoryView({ category }: { category: Category }) {
   const site = getSite();
   const url = categoryUrl(category);
   const children = getChildCategories(category.id);
-  const counts = getCategoryCounts();
 
   // Товары подразделов входят в выдачу родителя: у самого родителя их нет,
   // и без них его страница была бы пустой в разметке ItemList.
@@ -102,36 +104,16 @@ export function CategoryView({ category }: { category: Category }) {
         )}
       </header>
 
-      {children.length > 0 ? (
-        // Раздел-витрина: показываем подразделы, а не товары. Товары видно
-        // на страницах подразделов, туда же ведёт и меню.
+      {children.length > 0 && (
         <nav
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+          className="mb-10"
           aria-label={`Подразделы раздела «${category.name}»`}
         >
-          {children.map((child) => (
-            <Link
-              key={child.id}
-              href={categoryUrl(child)}
-              className="card flex items-center justify-between gap-3 p-5 transition-colors hover:border-brand-600"
-            >
-              <span>
-                <span className="block text-base font-semibold text-brand-900">
-                  {child.name}
-                </span>
-                {child.excerpt && (
-                  <span className="mt-1 block text-sm text-brand-500">
-                    {child.excerpt}
-                  </span>
-                )}
-              </span>
-              <span className="tnum shrink-0 text-sm text-brand-300">
-                {counts[child.id] ?? 0}
-              </span>
-            </Link>
-          ))}
+          <CategoryGrid categories={children} priorityCount={4} />
         </nav>
-      ) : products.length === 0 ? (
+      )}
+
+      {products.length === 0 ? (
         <div className="card p-10 text-center">
           <p className="text-base font-semibold text-brand-900">
             В этом разделе пока нет товаров

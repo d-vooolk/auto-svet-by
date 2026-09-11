@@ -89,13 +89,20 @@ function load(): Catalog {
     )
     .all() as ProductRow[];
 
-  const products = productRows.map((row, index) =>
-    parseOrThrow(
+  const products = productRows.map((row, index) => {
+    const product = parseOrThrow(
       productSchema,
       JSON.parse(row.data),
       `товар №${index + 1} (таблица products)`,
-    ),
-  );
+    );
+    // Складской остаток на витрину не выходит вообще — ни в текст, ни в
+    // разметку. Одного «не выводим его в шаблоне» тут мало: страница товара
+    // отдаёт весь объект в клиентский компонент, и число уехало бы в
+    // исходный код страницы, где его видно любому. Админка читает товары в
+    // обход этого снимка (src/lib/store.ts), так что учёт не страдает.
+    delete product.stockQty;
+    return product;
+  });
 
   cache = { site, categories, products, version };
   return cache;

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/JsonLd";
@@ -14,8 +14,10 @@ import {
   getRelatedProducts,
   getSite,
 } from "@/lib/catalog";
+import { getMessengers, productMessage } from "@/lib/contacts";
 import { formatPrice } from "@/lib/format";
 import { pickImages } from "@/lib/images";
+import { findRedirect } from "@/lib/redirects";
 import { buildMetadata, productJsonLd, sentences } from "@/lib/seo";
 import { allProductImages, priceRange } from "@/lib/variant";
 
@@ -58,6 +60,18 @@ export async function generateMetadata({
   });
 }
 
+/**
+ * Постоянная переадресация на новый адрес или честный 404.
+ *
+ * permanentRedirect, а не redirect: 308 говорит поисковику перенести вес
+ * старой страницы на новую, а временный 307 оставил бы в индексе обе.
+ */
+function redirectOr404(path: string): never {
+  const target = findRedirect(path);
+  if (target) permanentRedirect(target);
+  notFound();
+}
+
 /** Короткая строка о доставке для блока рядом с кнопкой заказа. */
 function deliveryNote(): string {
   const site = getSite();
@@ -72,7 +86,10 @@ function deliveryNote(): string {
 export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
   const product = getProductBySlug(slug);
-  if (!product) notFound();
+  // Товара по этому адресу нет — но, может быть, он просто переехал. Поиск
+  // по таблице переадресаций достаётся только таким запросам: у настоящих
+  // адресов страница уже собрана и до сюда дело не доходит.
+  if (!product) redirectOr404(`/product/${slug}/`);
 
   const site = getSite();
   const category = getCategoryById(product.categoryId);
@@ -82,6 +99,23 @@ export default async function ProductPage({ params }: PageProps) {
   // товара — включая галереи всех опций, чтобы переключение цоколя работало
   // без дополнительных запросов.
   const images = pickImages(allProductImages(product));
+
+  const range = priceRange(product);
+  const messengers = getMessengers(
+    site,
+    productMessage(
+      site,
+      product,
+      `${range.varies ? "от " : ""}${formatPrice(range.min, site.currencySymbol)}`,
+    ),
+  );
+
+  // Быстрый заказ адрес не спрашивает, поэтому по умолчанию помечаем его
+  // способом без адреса — самовывозом. Если такого в настройках нет, берём
+  // первый: менеджер всё равно согласует доставку в звонке.
+  const quickDelivery =
+    site.delivery.methods.find((method) => !method.requiresAddress) ??
+    site.delivery.methods[0];
 
   return (
     <div className="container-page">
@@ -121,8 +155,14 @@ export default async function ProductPage({ params }: PageProps) {
         product={product}
         images={images}
         currencySymbol={site.currencySymbol}
+        currency={site.currency}
         deliveryNote={deliveryNote()}
         warranty={site.warranty}
+        orderEndpoint={site.orderEndpoint}
+        quickDeliveryId={quickDelivery.id}
+        phone={site.phone}
+        phoneHref={site.phoneHref}
+        messengers={messengers}
       />
 
       {/* -------------------- Описание и характеристики ------------------ */}

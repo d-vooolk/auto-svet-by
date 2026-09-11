@@ -173,6 +173,16 @@ function validate(payload: unknown): { order?: ValidatedOrder; error?: string } 
   const deliveryId = clean(delivery.id, 40);
   const address = clean(delivery.address, 300);
 
+  /**
+   * Быстрый заказ со страницы товара: только имя и телефон.
+   *
+   * Способ получения и адрес там не спрашиваются намеренно — весь смысл
+   * формы в том, что она из двух полей. Менеджер всё равно перезванивает и
+   * согласовывает доставку, поэтому адрес выясняется в том же разговоре, а
+   * не в форме, которую из-за третьего поля половина не дозаполняет.
+   */
+  const quick = body.quick === true;
+
   // Стоимость доставки берём свою, из настроек, а не из запроса — по той же
   // причине, по которой не верим ценам товаров.
   const method = getSite().delivery.methods.find(
@@ -183,9 +193,10 @@ function validate(payload: unknown): { order?: ValidatedOrder; error?: string } 
   const free = method.freeFrom != null && serverTotal >= method.freeFrom;
   const deliveryCost = free ? 0 : method.price;
 
-  if (method.requiresAddress && address.length < 5) {
+  if (method.requiresAddress && !quick && address.length < 5) {
     return { error: "Не указан адрес доставки" };
   }
+  if (quick) notes.push("быстрый заказ со страницы товара — уточните доставку");
 
   const subtotal = Math.round(serverTotal * 100) / 100;
   const total = Math.round((serverTotal + deliveryCost) * 100) / 100;

@@ -1,12 +1,17 @@
 import Link from "next/link";
 
+import { ContactButtons } from "@/components/ContactButtons";
 import { INFO_PAGES } from "@/components/Header";
 import { HeadlightIcon, PhoneIcon } from "@/components/icons";
 import { categoryUrl, getRootCategories, getSite } from "@/lib/catalog";
+import { getChannels } from "@/lib/contacts";
 
 export function Footer() {
   const site = getSite();
   const categories = getRootCategories();
+  // Тот же список, что в панели справа и на карточках товаров: ссылки на
+  // мессенджеры собираются в одном месте — src/lib/contacts.ts.
+  const channels = getChannels(site);
   // Считается на сборке и запекается в HTML — обновится при следующем деплое.
   const year = new Date().getFullYear();
 
@@ -81,16 +86,7 @@ export function Footer() {
           <p className="mt-2 text-sm text-brand-500">
             {site.address.city}, {site.address.street}
           </p>
-          {site.telegram && (
-            <a
-              href={site.telegram}
-              rel="noopener noreferrer nofollow"
-              target="_blank"
-              className="mt-4 inline-flex text-sm font-medium text-brand-900 underline decoration-accent-400 decoration-2 underline-offset-4 hover:decoration-accent-600"
-            >
-              Написать в Telegram
-            </a>
-          )}
+          <ContactButtons channels={channels} size={32} className="mt-4" />
         </div>
       </div>
 

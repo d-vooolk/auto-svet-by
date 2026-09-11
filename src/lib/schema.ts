@@ -81,6 +81,14 @@ export const productSchema = z.strictObject({
   price: money,
   oldPrice: money.nullable().optional(),
   inStock: z.boolean().default(true),
+  /**
+   * Складской остаток. Виден только в админке: покупателю показывать нечего
+   * — «осталось 2 шт.» на витрине живёт своей жизнью и врёт при первом же
+   * заказе по телефону. Здесь это внутренний учёт, не более.
+   *
+   * null — учёт по этому товару не ведётся (не то же самое, что ноль).
+   */
+  stockQty: z.number().int().nonnegative().nullable().optional(),
   badge: z.string().optional(),
   featured: z.boolean().optional(),
   unit: z.string().optional(),
@@ -141,6 +149,7 @@ export const siteSchema = z.strictObject({
   email: z.string().email(),
   telegram: z.string().default(""),
   viber: z.string().default(""),
+  whatsapp: z.string().default(""),
   instagram: z.string().default(""),
   address: z.strictObject({
     street: z.string(),

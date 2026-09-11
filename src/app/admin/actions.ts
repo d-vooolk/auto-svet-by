@@ -24,6 +24,7 @@ import {
 import {
   deleteCategory,
   deleteProduct,
+  deleteProducts,
   getCategoryRaw,
   getProductRaw,
   reorderCategories,
@@ -31,7 +32,8 @@ import {
   saveCategory,
   saveProduct,
   saveSite,
-  setProductFlag,
+  setProductPrice,
+  setProductStockQty,
   type SaveResult,
 } from "@/lib/store";
 import { login, logout, requireAdmin } from "@/lib/auth";
@@ -142,20 +144,72 @@ export async function deleteProductAction(id: string): Promise<FormState> {
   redirect("/admin/products/");
 }
 
-export async function toggleProductAction(
+/**
+ * Удаление отмеченных галочками товаров.
+ *
+ * Адреса страниц собираются до удаления — после него ни товара, ни его
+ * раздела в снимке каталога уже не найти, а пересобрать нужно и страницу
+ * товара, и разделы, где он лежал.
+ */
+export async function deleteProductsAction(ids: string[]): Promise<FormState> {
+  await requireAdmin();
+
+  if (!Array.isArray(ids) || !ids.length) return fail(["Ничего не выбрано"]);
+  if (ids.some((id) => typeof id !== "string")) {
+    return fail(["Некорректный список товаров"]);
+  }
+
+  const affected = ids
+    .map((id) => getProductRaw(id))
+    .filter((product): product is NonNullable<typeof product> => Boolean(product))
+    .map((product) => ({
+      slug: product.slug,
+      paths: categoryPaths(product.categoryId),
+    }));
+
+  if (!affected.length) return fail(["Товары не найдены"]);
+
+  deleteProducts(ids);
+  invalidateCatalog();
+
+  for (const entry of affected) revalidateProduct(entry.slug, entry.paths);
+
+  return ok();
+}
+
+/** Быстрая правка цены прямо из списка товаров. */
+export async function setProductPriceAction(
   id: string,
-  flag: "inStock" | "featured",
-  value: boolean,
+  price: number,
 ): Promise<FormState> {
   await requireAdmin();
 
   const product = getProductRaw(id);
   if (!product) return fail(["Товар не найден"]);
 
-  setProductFlag(id, flag, value);
+  const result = setProductPrice(id, price);
+  if (!result.ok) return toState(result);
+
   invalidateCatalog();
   revalidateProduct(product.slug, categoryPaths(product.categoryId));
 
+  return ok();
+}
+
+/**
+ * Складской остаток. Пересобирать страницы не нужно: на витрине этого
+ * числа нет, оно только для внутреннего учёта.
+ */
+export async function setProductStockQtyAction(
+  id: string,
+  qty: number | null,
+): Promise<FormState> {
+  await requireAdmin();
+
+  const result = setProductStockQty(id, qty);
+  if (!result.ok) return toState(result);
+
+  invalidateCatalog();
   return ok();
 }
 

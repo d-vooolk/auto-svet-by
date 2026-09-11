@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { CategoryGrid } from "@/components/CategoryTile";
 import { JsonLd } from "@/components/JsonLd";
-import { Picture } from "@/components/Picture";
 import { ProductCard } from "@/components/ProductCard";
 import {
   CheckIcon,
@@ -12,15 +12,11 @@ import {
   TruckIcon,
 } from "@/components/icons";
 import {
-  categoryUrl,
-  getCategoryCounts,
   getFeaturedProducts,
   getProducts,
   getRootCategories,
   getSite,
 } from "@/lib/catalog";
-import { pluralize } from "@/lib/format";
-import { getImage } from "@/lib/images";
 import { buildMetadata, organizationJsonLd } from "@/lib/seo";
 
 export function generateMetadata(): Metadata {
@@ -70,7 +66,6 @@ function catalogSpecs(): string[] {
 export default function HomePage() {
   const site = getSite();
   const categories = getRootCategories();
-  const counts = getCategoryCounts();
   const featured = getFeaturedProducts(8);
   const specs = catalogSpecs();
   // Бегущая строка: сначала разделы, потом обозначения. Список повторяется
@@ -163,9 +158,13 @@ export default function HomePage() {
           </div>
 
           {/* Линза. Блок чисто декоративный: ничего, чего нет в тексте
-              слева, он не сообщает, поэтому от скринридера скрыт целиком. */}
+              слева, он не сообщает, поэтому от скринридера скрыт целиком.
+
+              На мобильных его нет вместе с бегущей строкой под ним: круг с
+              плашками «би-ЛЕД» и «5000K» занимал там почти весь первый
+              экран, а каталог уезжал за нижний край. */}
           <div
-            className="rise relative mx-auto w-full max-w-[24rem] lg:max-w-[30rem]"
+            className="rise relative mx-auto hidden w-full max-w-[24rem] lg:block lg:max-w-[30rem]"
             style={{ animationDelay: "120ms" }}
             aria-hidden="true"
           >
@@ -194,7 +193,7 @@ export default function HomePage() {
 
         {/* Бегущая строка: чем торгуем, настоящими словами из каталога.
             Заодно это те самые запросы, по которым магазин ищут. */}
-        <div className="marquee border-t border-brand-100 bg-white/50 py-3.5">
+        <div className="marquee hidden border-t border-brand-100 bg-white/50 py-3.5 lg:block">
           <div className="marquee-track">
             {/* Два одинаковых прогона: второй подставляется под первый, и
                 сдвиг дорожки на половину ширины выглядит бесшовным. */}
@@ -246,41 +245,7 @@ export default function HomePage() {
           </Link>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
-            <Link
-              key={category.id}
-              href={categoryUrl(category)}
-              className="group card card-link reveal flex gap-5 overflow-hidden p-5"
-            >
-              <span className="photo-bed flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-control">
-                <Picture
-                  entry={getImage(category.image)}
-                  alt=""
-                  sizes="96px"
-                  className="h-full w-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
-                />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="flex items-baseline gap-2">
-                  <span className="text-[15px] font-semibold text-brand-900">
-                    {category.name}
-                  </span>
-                  {/* Голая цифра рядом с названием читалась загадкой —
-                      «Лампы 4». Со словом понятно без догадок. */}
-                  <span className="tnum text-xs text-brand-300">
-                    {pluralize(counts[category.id] ?? 0, "товар", "товара", "товаров")}
-                  </span>
-                </span>
-                {category.excerpt && (
-                  <span className="mt-1.5 block text-sm leading-relaxed text-brand-500">
-                    {category.excerpt}
-                  </span>
-                )}
-              </span>
-            </Link>
-          ))}
-        </div>
+        <CategoryGrid categories={categories} priorityCount={4} />
       </section>
 
       {/* ---------------------------- Хиты ------------------------------ */}

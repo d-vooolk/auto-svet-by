@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { CategoryView, categoryMetadata } from "@/components/CategoryView";
 import { getCategoryBySlug, getRootCategories } from "@/lib/catalog";
+import { findRedirect } from "@/lib/redirects";
 
 /**
  * Раздел верхнего уровня — основная точка входа из поиска.
@@ -33,7 +34,13 @@ export async function generateMetadata({
 export default async function CategoryPage({ params }: PageProps) {
   const { category: slug } = await params;
   const category = getCategoryBySlug(slug);
-  if (!category || category.parentId) notFound();
+  if (!category || category.parentId) {
+    // Раздел мог переехать — переименование меняет адрес. Со старого адреса
+    // отдаём постоянную переадресацию, а не 404.
+    const target = findRedirect(`/catalog/${slug}/`);
+    if (target) permanentRedirect(target);
+    notFound();
+  }
 
   return <CategoryView category={category} />;
 }

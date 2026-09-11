@@ -1,7 +1,10 @@
 import Link from "next/link";
 
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ContactButtons } from "@/components/ContactButtons";
 import { Picture } from "@/components/Picture";
+import { getSite } from "@/lib/catalog";
+import { getMessengers, productMessage } from "@/lib/contacts";
 import { formatPrice } from "@/lib/format";
 import { pickUrl } from "@/lib/image-types";
 import { getImage } from "@/lib/images";
@@ -19,6 +22,12 @@ import {
  *
  * У товара с опциями цену показываем диапазоном («от 84,90 р.»), а вместо
  * кнопки даём ссылку на страницу товара: цоколь с карточки не выберешь.
+ *
+ * Кнопки мессенджеров открывают чат с уже написанным вопросом по этому
+ * товару — название, цена и ссылка. Для половины покупателей автосвета это
+ * основной способ заказа: они не оформляют корзину, а спрашивают «подойдёт
+ * ли к моей машине», и без заготовки менеджеру приходится выяснять, о чём
+ * вообще речь.
  */
 
 interface ProductCardProps {
@@ -42,6 +51,16 @@ export function ProductCard({
   const href = `/product/${product.slug}/`;
 
   const variant = resolveVariant(product, defaultSelection(product));
+
+  const site = getSite();
+  const messengers = getMessengers(
+    site,
+    productMessage(
+      site,
+      product,
+      `${range.varies ? "от " : ""}${formatPrice(range.min, currencySymbol)}`,
+    ),
+  );
 
   return (
     <article className="group card card-link reveal flex w-full flex-col overflow-hidden">
@@ -128,6 +147,7 @@ export function ProductCard({
             </Link>
           ) : (
             <AddToCartButton
+              compact
               item={{
                 key: variant.key,
                 productId: product.id,
@@ -141,6 +161,13 @@ export function ProductCard({
                 imageUrl: pickUrl(entry, 200),
               }}
             />
+          )}
+
+          {messengers.length > 0 && (
+            <div className="mt-3 flex items-center justify-center gap-2 border-t border-brand-100 pt-3">
+              <span className="text-xs text-brand-400">Спросить:</span>
+              <ContactButtons channels={messengers} size={26} />
+            </div>
           )}
         </div>
       </div>

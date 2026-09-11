@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { ProductRow } from "@/components/admin/ProductRow";
+import { ProductsTable } from "@/components/admin/ProductsTable";
 import { getSite } from "@/lib/catalog";
 import { pickUrl } from "@/lib/image-types";
 import { getImage } from "@/lib/images";
@@ -32,7 +32,20 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   });
 
   const pages = Math.max(1, Math.ceil(total / PER_PAGE));
-  const categoryNames = new Map(categories.map((c) => [c.id, c.name]));
+
+  // Обычные объекты, а не Map: всё это уезжает пропсами в клиентский
+  // компонент, а Map через границу сервер→клиент не сериализуется.
+  const categoryNames = Object.fromEntries(
+    categories.map((category) => [category.id, category.name]),
+  );
+  // Манифест картинок клиенту целиком не отдаём — он большой из-за размытых
+  // заглушек. Достаём по одной готовой ссылке на миниатюру.
+  const thumbs = Object.fromEntries(
+    rows.map((product) => [
+      product.id,
+      pickUrl(getImage(product.image ?? undefined), 96),
+    ]),
+  );
 
   /** Ссылка с сохранением остальных фильтров. */
   const link = (patch: Record<string, string | undefined>) => {
@@ -112,19 +125,12 @@ export default async function ProductsPage({ searchParams }: PageProps) {
             : "Товаров пока нет. Начните с кнопки «Добавить товар»."}
         </p>
       ) : (
-        <div className="card divide-y divide-brand-100 overflow-hidden">
-          {rows.map((product) => (
-            <ProductRow
-              key={product.id}
-              product={product}
-              categoryName={categoryNames.get(product.categoryId) ?? "—"}
-              currencySymbol={site.currencySymbol}
-              // Манифест картинок клиенту целиком не отдаём — он большой из-за
-              // размытых заглушек. Достаём одну готовую ссылку на миниатюру.
-              thumb={pickUrl(getImage(product.image ?? undefined), 96)}
-            />
-          ))}
-        </div>
+        <ProductsTable
+          rows={rows}
+          categoryNames={categoryNames}
+          thumbs={thumbs}
+          currencySymbol={site.currencySymbol}
+        />
       )}
 
       {/* -------------------------- Страницы --------------------------- */}

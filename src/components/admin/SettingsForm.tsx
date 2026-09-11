@@ -4,7 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { saveSiteAction } from "@/app/admin/actions";
-import { Field, Problems, Section } from "@/components/admin/form-parts";
+import {
+  Field,
+  NumberInput,
+  Problems,
+  Section,
+} from "@/components/admin/form-parts";
 import { SpinnerIcon, TrashIcon } from "@/components/icons";
 import type { DeliveryMethod, Site } from "@/lib/schema";
 
@@ -133,8 +138,13 @@ export function SettingsForm({ site: initial }: { site: Site }) {
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Telegram" hint="Полная ссылка">
+        {/* Мессенджеры и соцсети. Отсюда их берут все блоки связи сразу:
+            панель справа на каждой странице, кнопки на карточках товаров и
+            подвал. Пустое поле — канала на сайте просто не будет.
+            Формат вольный: ссылка, @имя или номер телефона — привести к
+            рабочему адресу умеет src/lib/contacts.ts. */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Telegram" hint="Ссылка или @имя: https://t.me/autosvetby">
             <input
               value={draft.telegram}
               onChange={(event) => patch({ telegram: event.target.value })}
@@ -142,18 +152,28 @@ export function SettingsForm({ site: initial }: { site: Site }) {
               placeholder="https://t.me/autosvetby"
             />
           </Field>
-          <Field label="Viber">
+          <Field label="Viber" hint="Номер телефона — ссылку соберём сами">
             <input
               value={draft.viber}
               onChange={(event) => patch({ viber: event.target.value })}
               className="field"
+              placeholder="+375291234567"
             />
           </Field>
-          <Field label="Instagram">
+          <Field label="WhatsApp" hint="Номер телефона или ссылка wa.me">
+            <input
+              value={draft.whatsapp}
+              onChange={(event) => patch({ whatsapp: event.target.value })}
+              className="field"
+              placeholder="+375291234567"
+            />
+          </Field>
+          <Field label="Instagram" hint="Ссылка или @имя">
             <input
               value={draft.instagram}
               onChange={(event) => patch({ instagram: event.target.value })}
               className="field"
+              placeholder="https://instagram.com/autosvetby"
             />
           </Field>
         </div>
@@ -291,14 +311,10 @@ function DeliveryEditor({
               <span className="label mb-1 text-xs">
                 Стоимость, {currencySymbol}
               </span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
+              <NumberInput
                 value={method.price}
-                onChange={(event) =>
-                  update(index, { price: Number(event.target.value) })
-                }
+                onChange={(price) => update(index, { price: price ?? 0 })}
+                placeholder="0"
                 className="field tnum py-2 text-sm"
               />
             </label>
@@ -307,18 +323,9 @@ function DeliveryEditor({
               <span className="label mb-1 text-xs">
                 Бесплатно от, {currencySymbol}
               </span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={method.freeFrom ?? ""}
-                onChange={(event) =>
-                  update(index, {
-                    freeFrom: event.target.value
-                      ? Number(event.target.value)
-                      : null,
-                  })
-                }
+              <NumberInput
+                value={method.freeFrom ?? null}
+                onChange={(freeFrom) => update(index, { freeFrom })}
                 placeholder="не бывает"
                 className="field tnum py-2 text-sm"
               />

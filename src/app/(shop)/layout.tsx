@@ -1,5 +1,8 @@
+import { FloatingContacts } from "@/components/FloatingContacts";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { getSite } from "@/lib/catalog";
+import { getChannels } from "@/lib/contacts";
 
 /**
  * Обрамление витрины: шапка с меню и поиском, подвал с контактами.
@@ -14,6 +17,10 @@ import { Header } from "@/components/Header";
 export default function ShopLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Панель связи стоит здесь, а не в каждой странице: она висит поверх
+  // содержимого на всём сайте, включая корзину и страницу заказа.
+  const channels = getChannels(getSite());
+
   return (
     <div className="flex min-h-dvh flex-col">
       {/* Ссылка для клавиатуры и скринридеров: позволяет пропустить шапку
@@ -29,6 +36,7 @@ export default function ShopLayout({
         {children}
       </main>
       <Footer />
+      <FloatingContacts channels={channels} />
     </div>
   );
 }

@@ -3,16 +3,25 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
-import { toggleProductAction } from "@/app/admin/actions";
-import { formatPrice } from "@/lib/format";
+import {
+  setProductPriceAction,
+  setProductStockQtyAction,
+} from "@/app/admin/actions";
 import type { ProductBrief } from "@/lib/store";
 
 /**
  * Строка списка товаров.
  *
- * Наличие и «хит» переключаются прямо здесь: чтобы убрать с витрины
- * закончившийся товар, открывать карточку и жать «Сохранить» — лишние
- * четыре действия там, где хватает одного.
+ * Правится прямо здесь — цена и складской остаток. Это два числа, которые
+ * меняются чаще всего и по одной причине: пришла поставка или сменился
+ * прайс поставщика. Открывать ради них карточку, листать её до нужного
+ * поля и жать «Сохранить» — четыре лишних действия на каждую позицию, а
+ * позиций за раз правят десяток.
+ *
+ * Переключателей «нал.» и «хит» здесь больше нет: две одинаковые серые
+ * кнопки в каждой строке давали рябь на весь экран, а нажимались случайно
+ * чаще, чем намеренно. Оба флага остались в карточке товара, где рядом с
+ * ними написано, что они делают.
  */
 
 interface ProductRowProps {
@@ -20,6 +29,8 @@ interface ProductRowProps {
   categoryName: string;
   currencySymbol: string;
   thumb: string | null;
+  selected: boolean;
+  onSelect: (id: string, selected: boolean) => void;
 }
 
 export function ProductRow({
@@ -27,35 +38,29 @@ export function ProductRow({
   categoryName,
   currencySymbol,
   thumb,
+  selected,
+  onSelect,
 }: ProductRowProps) {
   const [pending, startTransition] = useTransition();
-
-  // Показываем новое состояние сразу, не дожидаясь сервера: переключатель,
-  // который «думает» полсекунды, ощущается сломанным.
-  const [inStock, setInStock] = useState(product.inStock);
-  const [featured, setFeatured] = useState(product.featured);
   const [error, setError] = useState("");
 
-  const toggle = (flag: "inStock" | "featured", next: boolean) => {
-    const revert = flag === "inStock" ? setInStock : setFeatured;
-    revert(next);
-    setError("");
-
-    startTransition(async () => {
-      const result = await toggleProductAction(product.id, flag, next);
-      if (!result.ok) {
-        revert(!next); // сервер не принял — возвращаем как было
-        setError(result.problems.join(" "));
-      }
-    });
-  };
-
   return (
+    // flex-wrap: на телефоне поля цены и остатка не влезают в строку рядом с
+    // названием и уезжают под него, а не пропадают совсем — править остатки
+    // с телефона на складе удобнее, чем с ноутбука.
     <div
-      className={`flex items-center gap-3 px-3 py-2.5 transition-opacity sm:px-4 ${
+      className={`flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 transition-colors sm:px-4 ${
         pending ? "opacity-60" : ""
-      } ${inStock ? "" : "bg-brand-50"}`}
+      } ${selected ? "bg-brand-50" : ""}`}
     >
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={(event) => onSelect(product.id, event.target.checked)}
+        aria-label={`Выбрать «${product.title}»`}
+        className="h-4 w-4 shrink-0 rounded border-brand-300 text-brand-700 focus:ring-brand-600"
+      />
+
       <div className="photo-bed h-12 w-12 shrink-0 overflow-hidden rounded-lg">
         {thumb ? (
           // Обычный img: это админка, размытые заглушки и srcset тут не нужны.
@@ -74,7 +79,7 @@ export function ProductRow({
         )}
       </div>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[12rem] flex-1">
         <Link
           href={`/admin/products/${product.id}/`}
           className="block truncate text-sm font-semibold text-brand-900 hover:text-brand-700"
@@ -84,63 +89,126 @@ export function ProductRow({
         <p className="truncate text-xs text-brand-400">
           {categoryName}
           {product.brand ? ` · ${product.brand}` : ""} · /{product.slug}/
+          {product.inStock ? "" : " · снят с продажи"}
         </p>
         {error && <p className="mt-0.5 text-xs text-red-600">{error}</p>}
       </div>
 
-      <p className="tnum hidden shrink-0 text-sm font-semibold text-brand-900 sm:block">
-        {formatPrice(product.price, currencySymbol)}
-      </p>
+      <InlineNumber
+        value={product.price}
+        suffix={currencySymbol}
+        title="Цена"
+        className="w-24"
+        onSave={(next) =>
+          startTransition(async () => {
+            setError("");
+            const result = await setProductPriceAction(product.id, next ?? 0);
+            if (!result.ok) setError(result.problems.join(" "));
+          })
+        }
+      />
 
-      <div className="flex shrink-0 items-center gap-1">
-        <Toggle
-          label="В наличии"
-          short="нал."
-          active={inStock}
-          onChange={(value) => toggle("inStock", value)}
-          activeClass="bg-green-100 text-green-800"
-        />
-        <Toggle
-          label="Хит продаж — показывать на главной"
-          short="хит"
-          active={featured}
-          onChange={(value) => toggle("featured", value)}
-          activeClass="bg-amber-100 text-amber-900"
-        />
-        <Link
-          href={`/product/${product.slug}/`}
-          target="_blank"
-          rel="noopener"
-          title="Посмотреть на сайте"
-          className="btn-ghost px-2 py-1 text-xs"
-        >
-          ↗
-        </Link>
-      </div>
+      <InlineNumber
+        value={product.stockQty}
+        suffix="шт."
+        title="Остаток на складе — виден только в админке"
+        placeholder="—"
+        className="w-20"
+        onSave={(next) =>
+          startTransition(async () => {
+            setError("");
+            const result = await setProductStockQtyAction(product.id, next);
+            if (!result.ok) setError(result.problems.join(" "));
+          })
+        }
+      />
+
+      <Link
+        href={`/product/${product.slug}/`}
+        target="_blank"
+        rel="noopener"
+        title="Посмотреть на сайте"
+        className="btn-ghost shrink-0 px-2 py-1 text-xs"
+      >
+        ↗
+      </Link>
     </div>
   );
 }
 
-interface ToggleProps {
-  label: string;
-  short: string;
-  active: boolean;
-  onChange: (value: boolean) => void;
-  activeClass: string;
+/* ------------------------------------------------------------------ */
+
+interface InlineNumberProps {
+  value: number | null;
+  suffix: string;
+  title: string;
+  placeholder?: string;
+  className?: string;
+  /** null — поле очистили: значит «не задано». */
+  onSave: (value: number | null) => void;
 }
 
-function Toggle({ label, short, active, onChange, activeClass }: ToggleProps) {
+/**
+ * Число, которое правится на месте.
+ *
+ * Сохраняет по уходу фокуса и по Enter, а не на каждое нажатие клавиши:
+ * иначе набор «100» отправил бы на сервер сначала 1, потом 10, потом 100 —
+ * три записи в базу и три пересборки страниц вместо одной.
+ *
+ * Значение держится строкой. Числом его хранить нельзя: поле с number 0
+ * показывает «0», и набранная поверх сотня превращается в «0100».
+ */
+function InlineNumber({
+  value,
+  suffix,
+  title,
+  placeholder,
+  className = "",
+  onSave,
+}: InlineNumberProps) {
+  const asText = (input: number | null) => (input === null ? "" : String(input));
+  const [text, setText] = useState(() => asText(value));
+
+  // Значение могло приехать новым с сервера — например, страница
+  // перерисовалась после удаления соседних позиций. Правим состояние прямо
+  // в рендере, а не в эффекте: эффект сделал бы это вторым проходом, и
+  // между ними поле успело бы моргнуть старым числом.
+  const [known, setKnown] = useState(value);
+  if (value !== known) {
+    setKnown(value);
+    setText(asText(value));
+  }
+
+  const commit = () => {
+    const trimmed = text.trim();
+    const next = trimmed === "" ? null : Number(trimmed.replace(",", "."));
+    if (next !== null && !Number.isFinite(next)) {
+      setText(asText(value));
+      return;
+    }
+    if (next === value) return; // ничего не поменялось — не трогаем сервер
+    onSave(next);
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => onChange(!active)}
-      aria-pressed={active}
-      title={label}
-      className={`rounded-lg px-2 py-1 text-xs font-semibold transition-colors ${
-        active ? activeClass : "bg-brand-50 text-brand-300 hover:bg-brand-100"
-      }`}
-    >
-      {short}
-    </button>
+    <label className={`relative block shrink-0 ${className}`} title={title}>
+      <span className="sr-only">{title}</span>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={text}
+        placeholder={placeholder}
+        onChange={(event) => setText(event.target.value)}
+        onBlur={commit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") event.currentTarget.blur();
+          if (event.key === "Escape") setText(asText(value));
+        }}
+        className="field tnum w-full py-1.5 pr-9 text-right text-sm"
+      />
+      <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-brand-300">
+        {suffix}
+      </span>
+    </label>
   );
 }

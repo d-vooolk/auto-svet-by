@@ -110,10 +110,22 @@ export function Header() {
         className="hidden border-t border-brand-100/70 lg:block"
         aria-label="Категории"
       >
-        <div className="container-page flex h-11 items-center gap-1">
+        {/*
+          Пункт меню не сжимается и не переносится по словам.
+
+          Раньше здесь стояли фиксированная высота h-11 и обычный flex: при
+          десятке разделов пункты сжимались до ширины буквы, «Блоки розжига»
+          ломались на три строки и всё равно не помещались. Теперь у каждого
+          shrink-0 и whitespace-nowrap, а не влезающие пункты переносятся на
+          вторую строку целиком.
+
+          Прокрутку по горизонтали сюда ставить нельзя: overflow обрезал бы
+          выпадающие панели подразделов — они висят ниже полосы.
+        */}
+        <div className="container-page flex min-h-11 flex-wrap items-center gap-1 py-1">
           <Link
             href="/catalog/"
-            className="rounded-control px-3 py-1.5 text-sm font-semibold text-brand-900 transition-colors hover:bg-brand-50"
+            className="flex shrink-0 items-center rounded-control px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-brand-900 transition-colors hover:bg-brand-50"
           >
             Весь каталог
           </Link>
@@ -122,7 +134,7 @@ export function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="rounded-control px-3 py-1.5 text-sm text-brand-500 transition-colors hover:bg-brand-50 hover:text-brand-900"
+                className="flex shrink-0 items-center rounded-control px-3 py-1.5 text-sm whitespace-nowrap text-brand-500 transition-colors hover:bg-brand-50 hover:text-brand-900"
               >
                 {link.label}
               </Link>
@@ -131,15 +143,15 @@ export function Header() {
               // клавиатуры, без JS: панель всегда в разметке, меняется
               // только видимость. Значит, её видит и краулер — ссылки на
               // подразделы стоят на каждой странице сайта.
-              <div key={link.href} className="group relative">
+              <div key={link.href} className="group relative flex shrink-0 items-center">
                 <Link
                   href={link.href}
-                  className="flex items-center gap-1 rounded-control px-3 py-1.5 text-sm text-brand-500 transition-colors group-hover:bg-brand-50 group-hover:text-brand-900 group-focus-within:bg-brand-50"
+                  className="flex items-center gap-1 rounded-control px-3 py-1.5 text-sm whitespace-nowrap text-brand-500 transition-colors group-hover:bg-brand-50 group-hover:text-brand-900 group-focus-within:bg-brand-50"
                 >
                   {link.label}
                   <ChevronDownIcon className="h-3.5 w-3.5 text-brand-300" />
                 </Link>
-                <div className="invisible absolute top-full left-0 z-40 min-w-52 rounded-control border border-brand-100 bg-white p-1.5 opacity-0 shadow-card-hover transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                <div className="invisible absolute top-full left-0 z-40 min-w-52 rounded-control border border-brand-100 bg-white p-1.5 whitespace-nowrap opacity-0 shadow-card-hover transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
                   {link.children.map((child) => (
                     <Link
                       key={child.href}

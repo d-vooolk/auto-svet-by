@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { ImagePicker } from "@/components/admin/ImagePicker";
+import { NumberInput } from "@/components/admin/form-parts";
 import { ChevronDownIcon, ChevronRightIcon, TrashIcon } from "@/components/icons";
 import type { OptionGroup, OptionValue } from "@/lib/schema";
 import { toSlug } from "@/lib/slug";
@@ -252,32 +253,17 @@ function ValuesEditor({
                   {isFirstGroup ? "цена" : "надбавка"}
                 </span>
                 {isFirstGroup ? (
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={item.price ?? ""}
-                    onChange={(event) =>
-                      update(index, {
-                        price: event.target.value
-                          ? Number(event.target.value)
-                          : undefined,
-                      })
-                    }
+                  <NumberInput
+                    value={item.price ?? null}
+                    onChange={(price) => update(index, { price: price ?? undefined })}
                     placeholder={String(basePrice)}
                     className="field tnum w-24 py-1.5 text-sm"
                   />
                 ) : (
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={item.priceDelta ?? ""}
-                    onChange={(event) =>
-                      update(index, {
-                        priceDelta: event.target.value
-                          ? Number(event.target.value)
-                          : undefined,
-                      })
+                  <NumberInput
+                    value={item.priceDelta ?? null}
+                    onChange={(priceDelta) =>
+                      update(index, { priceDelta: priceDelta ?? undefined })
                     }
                     placeholder="0"
                     className="field tnum w-24 py-1.5 text-sm"
@@ -375,17 +361,10 @@ function ValuesEditor({
                     <span className="label mb-1 text-xs">
                       Старая цена, {currencySymbol}
                     </span>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={item.oldPrice ?? ""}
-                      onChange={(event) =>
-                        update(index, {
-                          oldPrice: event.target.value
-                            ? Number(event.target.value)
-                            : undefined,
-                        })
+                    <NumberInput
+                      value={item.oldPrice ?? null}
+                      onChange={(oldPrice) =>
+                        update(index, { oldPrice: oldPrice ?? undefined })
                       }
                       className="field tnum py-2 text-sm"
                     />

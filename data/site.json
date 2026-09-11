@@ -11,7 +11,8 @@
   "phoneHref": "+375291234567",
   "email": "info@auto-svet.by",
   "telegram": "https://t.me/autosvetby",
-  "viber": "viber://chat?number=%2B375291234567",
+  "viber": "+375291234567",
+  "whatsapp": "+375291234567",
   "instagram": "",
   "address": {
     "street": "ул. Притыцкого, 29",

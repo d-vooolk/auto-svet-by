@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { ContactButtons } from "@/components/ContactButtons";
 import {
   CheckIcon,
+  ChevronRightIcon,
   CloseIcon,
   MinusIcon,
   PlusIcon,
@@ -13,6 +14,8 @@ import {
   TruckIcon,
 } from "@/components/icons";
 import { ImagePlaceholder, Picture } from "@/components/Picture";
+import { QuickOrder } from "@/components/QuickOrder";
+import type { Channel } from "@/lib/contacts";
 import { formatPrice } from "@/lib/format";
 import { pickUrl, type ImageMap } from "@/lib/image-types";
 import type { Product } from "@/lib/schema";
@@ -34,16 +37,52 @@ interface ProductPurchaseProps {
   /** Записи манифеста только для фото этого товара — не весь манифест. */
   images: ImageMap;
   currencySymbol: string;
+  currency: string;
   deliveryNote: string;
   warranty: string;
+  /** Куда уходит быстрый заказ и каким способом получения он помечается. */
+  orderEndpoint: string;
+  quickDeliveryId: string;
+  phone: string;
+  phoneHref: string;
+  /** Telegram, Viber, WhatsApp — уже с готовым текстом вопроса по товару. */
+  messengers: Channel[];
+}
+
+/**
+ * Следующая позиция в галерее по кругу.
+ *
+ * Вынесена из компонента, потому что вызывается и из кнопок, и из
+ * обработчика клавиш: будь она внутри, попала бы в зависимости эффекта и
+ * заставляла бы его переподписываться на каждый рендер.
+ */
+function shift(
+  current: { key: string; index: number },
+  galleryKey: string,
+  count: number,
+  delta: number,
+): { key: string; index: number } {
+  // Набор фотографий мог смениться (переключили цоколь) — тогда считаем от
+  // первого кадра, а не от позиции в прежней галерее.
+  const at =
+    current.key === galleryKey
+      ? Math.max(0, Math.min(current.index, count - 1))
+      : 0;
+  return { key: galleryKey, index: (at + delta + count) % count };
 }
 
 export function ProductPurchase({
   product,
   images,
   currencySymbol,
+  currency,
   deliveryNote,
   warranty,
+  orderEndpoint,
+  quickDeliveryId,
+  phone,
+  phoneHref,
+  messengers,
 }: ProductPurchaseProps) {
   const [selection, setSelection] = useState<Selection>(() =>
     defaultSelection(product),
@@ -68,15 +107,50 @@ export function ProductPurchase({
   const mainEntry = images[mainPath] ?? null;
   const altText = `${product.title}${variant.label ? `, ${variant.label}` : ""}`;
 
-  // Escape закрывает фото на весь экран, как ожидается от модального окна.
+  /**
+   * Листание по кругу: с последнего фото вперёд — на первое.
+   *
+   * Через функцию-обновитель, а не через вычисленный выше index: тогда
+   * текущая позиция не нужна ни здесь, ни в списке зависимостей эффекта с
+   * обработчиком клавиш — иначе он переподписывался бы на каждое нажатие
+   * стрелки.
+   */
+  const count = gallery.length;
+  const step = (delta: number) => {
+    if (count < 2) return;
+    setActive((current) => shift(current, galleryKey, count, delta));
+  };
+
+  // Escape закрывает фото на весь экран, стрелки листают галерею — на
+  // полноэкранном просмотре это первое, что пробует человек с клавиатурой.
   useEffect(() => {
     if (!lightbox) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setLightbox(false);
+      if (count < 2) return;
+      if (event.key === "ArrowRight") {
+        setActive((current) => shift(current, galleryKey, count, 1));
+      }
+      if (event.key === "ArrowLeft") {
+        setActive((current) => shift(current, galleryKey, count, -1));
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [lightbox]);
+  }, [lightbox, galleryKey, count]);
+
+  // Свайп по фото на телефоне. Порог в 40 пикселей отсекает дрожание
+  // пальца при обычном нажатии, чтобы оно не пролистывало галерею.
+  const touchStartX = useRef<number | null>(null);
+  const onTouchStart = (event: React.TouchEvent) => {
+    touchStartX.current = event.touches[0].clientX;
+  };
+  const onTouchEnd = (event: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const shift = event.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(shift) > 40) step(shift < 0 ? 1 : -1);
+  };
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-12">
@@ -278,9 +352,35 @@ export function ProductPurchase({
           />
         </div>
 
-        <Link href="/cart/" className="btn-secondary mb-6 w-full">
-          Перейти в корзину
-        </Link>
+        <div className="mb-6">
+          <QuickOrder
+            orderEndpoint={orderEndpoint}
+            deliveryId={quickDeliveryId}
+            disabled={!variant.inStock}
+            qty={qty}
+            currency={currency}
+            phone={phone}
+            phoneHref={phoneHref}
+            item={{
+              key: variant.key,
+              productId: product.id,
+              slug: product.slug,
+              title: product.title,
+              options: variant.label,
+              sku: variant.sku,
+              price: variant.price,
+            }}
+          />
+        </div>
+
+        {messengers.length > 0 && (
+          <div className="mb-6 flex flex-wrap items-center gap-3 rounded-card border border-brand-100 p-4">
+            <span className="text-sm text-brand-600">
+              Спросить о товаре в мессенджере:
+            </span>
+            <ContactButtons channels={messengers} size={34} />
+          </div>
+        )}
 
         <ul className="space-y-3 rounded-card bg-brand-50 p-4 text-sm text-brand-600">
           <li className="flex gap-2.5">
@@ -301,6 +401,12 @@ export function ProductPurchase({
       </div>
 
       {/* -------------------------- Лайтбокс --------------------------- */}
+      {/*
+        Полноэкранное фото с листанием галереи: стрелками по бокам, клавишами
+        и свайпом. Раньше здесь открывалось одно фото без выхода к
+        остальным — чтобы посмотреть вторую сторону линзы, приходилось
+        закрывать окно, тыкать в миниатюру и открывать заново.
+      */}
       {lightbox && mainEntry && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-brand-900/90 p-4"
@@ -312,18 +418,57 @@ export function ProductPurchase({
           <button
             type="button"
             onClick={() => setLightbox(false)}
-            className="absolute top-4 right-4 rounded-xl bg-white/10 p-2.5 text-white hover:bg-white/20"
+            className="absolute top-4 right-4 z-10 rounded-xl bg-white/10 p-2.5 text-white hover:bg-white/20"
             aria-label="Закрыть"
           >
             <CloseIcon className="h-6 w-6" />
           </button>
-          <Picture
-            entry={mainEntry}
-            alt={altText}
-            sizes="100vw"
-            priority
-            className="max-h-[90vh] max-w-full object-contain"
-          />
+
+          {gallery.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  step(-1);
+                }}
+                className="absolute left-2 z-10 rounded-full bg-white/10 p-3 text-white hover:bg-white/20 sm:left-6"
+                aria-label="Предыдущее фото"
+              >
+                <ChevronRightIcon className="h-6 w-6 rotate-180" />
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  step(1);
+                }}
+                className="absolute right-2 z-10 rounded-full bg-white/10 p-3 text-white hover:bg-white/20 sm:right-6"
+                aria-label="Следующее фото"
+              >
+                <ChevronRightIcon className="h-6 w-6" />
+              </button>
+              <p className="tnum absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-white/10 px-3 py-1 text-sm text-white">
+                {index + 1} / {gallery.length}
+              </p>
+            </>
+          )}
+
+          {/* Клик по самой картинке не закрывает окно: на ней листают. */}
+          <div
+            onClick={(event) => event.stopPropagation()}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            className="flex max-h-full max-w-full items-center justify-center"
+          >
+            <Picture
+              entry={mainEntry}
+              alt={altText}
+              sizes="100vw"
+              priority
+              className="max-h-[85vh] max-w-full object-contain select-none"
+            />
+          </div>
         </div>
       )}
     </div>

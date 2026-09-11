@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { CategoryView, categoryMetadata } from "@/components/CategoryView";
 import { getCategories, getCategoryById, getCategoryBySlug } from "@/lib/catalog";
+import { findRedirect } from "@/lib/redirects";
 
 /**
  * Подраздел: /catalog/aksessuary/maski/.
@@ -46,7 +47,12 @@ export async function generateMetadata({
 export default async function SubCategoryPage({ params }: PageProps) {
   const { category: parentSlug, sub } = await params;
   const category = resolve(parentSlug, sub);
-  if (!category) notFound();
+  if (!category) {
+    // Переименовали родителя или сам подраздел — адрес поменялся целиком.
+    const target = findRedirect(`/catalog/${parentSlug}/${sub}/`);
+    if (target) permanentRedirect(target);
+    notFound();
+  }
 
   return <CategoryView category={category} />;
 }

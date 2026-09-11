@@ -1,5 +1,6 @@
 import { bumpCatalogVersion, getDb } from "./db";
 import { pluralize } from "./format";
+import { forgetRedirectsTo, rememberRedirect } from "./redirects";
 import {
   categorySchema,
   parseOrThrow,
@@ -43,6 +44,14 @@ export function saveProduct(input: unknown, previousId?: string): SaveResult {
   const product = parsed.data;
   const db = getDb();
   const problems: string[] = [];
+
+  // Прежний адрес запоминаем до записи: если он поменялся, со старого
+  // адреса нужна постоянная переадресация на новый.
+  const before = previousId
+    ? (db.prepare("SELECT slug FROM products WHERE id = ?").get(previousId) as
+        | { slug: string }
+        | undefined)
+    : undefined;
 
   const category = db
     .prepare("SELECT id FROM categories WHERE id = ?")
@@ -108,40 +117,118 @@ export function saveProduct(input: unknown, previousId?: string): SaveResult {
     updatedAt: now,
   });
 
+  if (before && before.slug !== product.slug) {
+    rememberRedirect(`/product/${before.slug}/`, `/product/${product.slug}/`);
+  }
+
   bumpCatalogVersion();
   return { ok: true };
 }
 
 export function deleteProduct(id: string): void {
-  getDb().prepare("DELETE FROM products WHERE id = ?").run(id);
+  const db = getDb();
+  const row = db.prepare("SELECT slug FROM products WHERE id = ?").get(id) as
+    | { slug: string }
+    | undefined;
+
+  db.prepare("DELETE FROM products WHERE id = ?").run(id);
+  if (row) forgetRedirectsTo(`/product/${row.slug}/`);
+
   bumpCatalogVersion();
 }
 
-/** Быстрые переключатели из списка товаров — без открытия карточки. */
-export function setProductFlag(
-  id: string,
-  flag: "inStock" | "featured",
-  value: boolean,
-): void {
+/**
+ * Удаление пачкой — из списка товаров с галочками.
+ *
+ * Одной транзакцией и одним подъёмом версии каталога: удалять полсотни
+ * позиций по одной значило бы полсотни раз пересобрать снимок каталога,
+ * причём каждый раз — из недоудалённого состояния.
+ */
+export function deleteProducts(ids: string[]): number {
+  if (!ids.length) return 0;
+
+  const db = getDb();
+  const slugs = db
+    .prepare(
+      `SELECT slug FROM products WHERE id IN (${ids.map(() => "?").join(",")})`,
+    )
+    .all(...ids) as Array<{ slug: string }>;
+
+  const remove = db.prepare("DELETE FROM products WHERE id = ?");
+  const removed = db.transaction((list: string[]) => {
+    let count = 0;
+    for (const id of list) count += remove.run(id).changes;
+    return count;
+  })(ids);
+
+  for (const row of slugs) forgetRedirectsTo(`/product/${row.slug}/`);
+
+  bumpCatalogVersion();
+  return removed;
+}
+
+/**
+ * Цена прямо из списка товаров.
+ *
+ * Правится и колонка, и JSON: по колонке идут выборки и сортировки, а JSON
+ * остаётся источником правды, из которого страница собирает товар.
+ *
+ * Важно: цену значения опции это не трогает. У товара с опциями своими
+ * ценами эта цена — запасная, и в списке она показана именно как таковая.
+ */
+export function setProductPrice(id: string, price: number): SaveResult {
+  if (!Number.isFinite(price) || price < 0) {
+    return { ok: false, problems: ["Цена должна быть числом не меньше нуля"] };
+  }
+
   const db = getDb();
   const row = db.prepare("SELECT data FROM products WHERE id = ?").get(id) as
     | { data: string }
     | undefined;
-  if (!row) return;
+  if (!row) return { ok: false, problems: ["Товар не найден"] };
 
-  // Правим и колонку, и JSON: колонка нужна для выборок, JSON — источник
-  // правды, из которого страница собирает товар.
   const product = JSON.parse(row.data) as Product;
-  product[flag] = value;
+  product.price = price;
 
   db.prepare(
-    `UPDATE products
-        SET ${flag === "inStock" ? "in_stock" : "featured"} = ?,
-            data = ?, updated_at = ?
-      WHERE id = ?`,
-  ).run(value ? 1 : 0, JSON.stringify(product), Date.now(), id);
+    "UPDATE products SET price = ?, data = ?, updated_at = ? WHERE id = ?",
+  ).run(price, JSON.stringify(product), Date.now(), id);
 
   bumpCatalogVersion();
+  return { ok: true };
+}
+
+/**
+ * Складской остаток. Только в JSON: отдельной колонки под него нет и не
+ * нужно — по остатку ничего не выбирается и не сортируется, а витрина о нём
+ * вообще не знает. В списке админки он достаётся через json_extract.
+ *
+ * null — учёт не ведётся. Это не то же самое, что ноль: ноль означает «на
+ * складе пусто», а null — «не считаем».
+ */
+export function setProductStockQty(id: string, qty: number | null): SaveResult {
+  if (qty !== null && (!Number.isInteger(qty) || qty < 0)) {
+    return { ok: false, problems: ["Количество — целое число не меньше нуля"] };
+  }
+
+  const db = getDb();
+  const row = db.prepare("SELECT data FROM products WHERE id = ?").get(id) as
+    | { data: string }
+    | undefined;
+  if (!row) return { ok: false, problems: ["Товар не найден"] };
+
+  const product = JSON.parse(row.data) as Product;
+  if (qty === null) delete product.stockQty;
+  else product.stockQty = qty;
+
+  db.prepare("UPDATE products SET data = ?, updated_at = ? WHERE id = ?").run(
+    JSON.stringify(product),
+    Date.now(),
+    id,
+  );
+
+  bumpCatalogVersion();
+  return { ok: true };
 }
 
 /** Порядок товаров внутри раздела: список id в нужной последовательности. */
@@ -159,6 +246,22 @@ export function reorderProducts(ids: string[]): void {
 /* ------------------------------------------------------------------ */
 /* Категории                                                           */
 /* ------------------------------------------------------------------ */
+
+/**
+ * Адрес страницы раздела по данным из базы.
+ *
+ * Дубль categoryUrl() из catalog.ts, и намеренный: тот считает по снимку
+ * каталога, который на момент сохранения ещё не пересобран и показывает
+ * состояние «до». Здесь же нужны оба состояния — и старое, и новое, — чтобы
+ * понять, поменялся ли адрес.
+ */
+function categoryPath(slug: string, parentId: string | null): string {
+  if (!parentId) return `/catalog/${slug}/`;
+  const parent = getDb()
+    .prepare("SELECT slug FROM categories WHERE id = ?")
+    .get(parentId) as { slug: string } | undefined;
+  return parent ? `/catalog/${parent.slug}/${slug}/` : `/catalog/${slug}/`;
+}
 
 /**
  * Правила дерева разделов. Проверяются при каждом сохранении.
@@ -265,6 +368,29 @@ export function saveCategory(
 
   if (problems.length) return { ok: false, problems };
 
+  /*
+   * Адреса до правки — сам раздел и все его подразделы.
+   *
+   * Подразделы здесь не для полноты: slug родителя входит в их адрес
+   * (/catalog/aksessuary/maski/), и переименование родителя переносит
+   * каждого из них. Без этих записей после переименования «Аксессуаров»
+   * из поиска отвалились бы не только они сами, но и все вложенные разделы.
+   */
+  const previous = previousId
+    ? (getDb()
+        .prepare("SELECT slug, parent_id FROM categories WHERE id = ?")
+        .get(previousId) as { slug: string; parent_id: string | null } | undefined)
+    : undefined;
+
+  const previousUrl = previous
+    ? categoryPath(previous.slug, previous.parent_id)
+    : "";
+  const previousChildren = previous
+    ? (getDb()
+        .prepare("SELECT id, slug FROM categories WHERE parent_id = ?")
+        .all(previousId) as Array<{ id: string; slug: string }>)
+    : [];
+
   const adopted =
     adoptProducts && category.parentId
       ? (db
@@ -305,6 +431,17 @@ export function saveCategory(
       move.run(category.id, JSON.stringify(product), now, row.id);
     }
   })();
+
+  if (previous) {
+    const url = categoryPath(category.slug, category.parentId ?? null);
+    rememberRedirect(previousUrl, url);
+    for (const child of previousChildren) {
+      rememberRedirect(
+        `/catalog/${previous.slug}/${child.slug}/`,
+        categoryPath(child.slug, category.id),
+      );
+    }
+  }
 
   bumpCatalogVersion();
   return { ok: true };
@@ -364,6 +501,10 @@ export function deleteCategory(id: string, moveTo?: string): SaveResult {
     }
   }
 
+  const gone = db
+    .prepare("SELECT slug, parent_id FROM categories WHERE id = ?")
+    .get(id) as { slug: string; parent_id: string | null } | undefined;
+
   const products = db
     .prepare("SELECT id, data FROM products WHERE category_id = ?")
     .all(id) as Array<{ id: string; data: string }>;
@@ -400,6 +541,21 @@ export function deleteCategory(id: string, moveTo?: string): SaveResult {
     }
     db.prepare("DELETE FROM categories WHERE id = ?").run(id);
   })();
+
+  if (gone) {
+    // Раздела больше нет — вести на него со старых адресов некуда.
+    forgetRedirectsTo(categoryPath(gone.slug, gone.parent_id));
+    // А вот его подразделы никуда не делись, только адрес у них укоротился:
+    // /catalog/aksessuary/maski/ → /catalog/maski/. Об этом и предупреждает
+    // админка перед удалением — здесь мы делаем предупреждение безобидным.
+    for (const row of children) {
+      const child = JSON.parse(row.data) as Category;
+      rememberRedirect(
+        `/catalog/${gone.slug}/${child.slug}/`,
+        `/catalog/${child.slug}/`,
+      );
+    }
+  }
 
   bumpCatalogVersion();
   return { ok: true };
@@ -492,6 +648,8 @@ export interface ProductBrief {
   categoryId: string;
   inStock: boolean;
   featured: boolean;
+  /** Складской остаток для внутреннего учёта. null — учёт не ведётся. */
+  stockQty: number | null;
   updatedAt: number;
   image: string | null;
 }
@@ -529,7 +687,8 @@ export function listProducts(filter: {
   const rows = getDb()
     .prepare(
       `SELECT id, slug, title, brand, price, category_id, in_stock, featured,
-              updated_at, json_extract(data, '$.images[0]') AS image
+              updated_at, json_extract(data, '$.images[0]') AS image,
+              json_extract(data, '$.stockQty') AS stock_qty
          FROM products ${clause}
         ORDER BY updated_at DESC
         LIMIT @limit OFFSET @offset`,
@@ -549,6 +708,7 @@ export function listProducts(filter: {
     featured: number;
     updated_at: number;
     image: string | null;
+    stock_qty: number | null;
   }>;
 
   return {
@@ -562,6 +722,7 @@ export function listProducts(filter: {
       categoryId: row.category_id,
       inStock: row.in_stock === 1,
       featured: row.featured === 1,
+      stockQty: row.stock_qty ?? null,
       updatedAt: row.updated_at,
       image: row.image,
     })),

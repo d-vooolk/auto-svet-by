@@ -60,13 +60,19 @@ export function getImage(imagePath: string | undefined): ImageEntry | null {
   return load()[imagePath] ?? null;
 }
 
-/** Подмножество манифеста для передачи в клиентский компонент пропсом. */
+/**
+ * Подмножество манифеста для передачи в клиентский компонент пропсом.
+ *
+ * Размытые заглушки выбрасываются: рисовать их перестали (см. Picture.tsx),
+ * а весит каждая пару килобайт base64 — на товаре с галереей из десяти фото
+ * это десятки килобайт в HTML страницы, которые никто не использует.
+ */
 export function pickImages(paths: string[]): ImageMap {
   const all = load();
   const map: ImageMap = {};
   for (const imagePath of paths) {
     const entry = all[imagePath];
-    if (entry) map[imagePath] = entry;
+    if (entry) map[imagePath] = { ...entry, blur: "" };
   }
   return map;
 }

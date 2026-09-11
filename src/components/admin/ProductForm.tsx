@@ -7,7 +7,13 @@ import { useState, useTransition } from "react";
 import { deleteProductAction, saveProductAction } from "@/app/admin/actions";
 import { ImagePicker } from "@/components/admin/ImagePicker";
 import { OptionGroupsEditor } from "@/components/admin/OptionGroupsEditor";
-import { Field, Problems, Section } from "@/components/admin/form-parts";
+import {
+  Field,
+  NumberInput,
+  Problems,
+  Section,
+  SlugField,
+} from "@/components/admin/form-parts";
 import { SpinnerIcon, TrashIcon } from "@/components/icons";
 import type { Product, Spec } from "@/lib/schema";
 import { toSlug } from "@/lib/slug";
@@ -105,8 +111,10 @@ export function ProductForm({
           {creating ? "Новый товар" : draft.title || "Без названия"}
         </h1>
         {!creating && (
+          // Сохранённый адрес, а не из черновика: правка slug'а в форме ещё
+          // ничего не создала, и ссылка вела бы на 404.
           <Link
-            href={`/product/${draft.slug}/`}
+            href={`/product/${initial.slug}/`}
             target="_blank"
             rel="noopener"
             className="text-xs text-brand-400 hover:text-brand-800"
@@ -185,28 +193,18 @@ export function ProductForm({
             required
             hint="Если есть опции со своими ценами — запасная"
           >
-            <input
-              type="number"
-              step="0.01"
-              min="0"
+            <NumberInput
               value={draft.price}
-              onChange={(event) => patch({ price: Number(event.target.value) })}
-              className="field tnum"
+              onChange={(price) => patch({ price: price ?? 0 })}
+              placeholder="0"
             />
           </Field>
 
           <Field label={`Старая цена, ${currencySymbol}`} hint="Покажется зачёркнутой">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={draft.oldPrice ?? ""}
-              onChange={(event) =>
-                patch({
-                  oldPrice: event.target.value ? Number(event.target.value) : null,
-                })
-              }
-              className="field tnum"
+            <NumberInput
+              value={draft.oldPrice ?? null}
+              onChange={(oldPrice) => patch({ oldPrice })}
+              placeholder="нет"
             />
           </Field>
 
@@ -220,7 +218,7 @@ export function ProductForm({
           </Field>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Артикул">
             <input
               value={draft.sku ?? ""}
@@ -234,6 +232,21 @@ export function ProductForm({
               value={draft.badge ?? ""}
               onChange={(event) => patch({ badge: event.target.value })}
               className="field"
+            />
+          </Field>
+
+          {/* Остаток — единственное поле формы, которого нет на витрине.
+              Покупателю его не показываем намеренно: «осталось 2 шт.» живёт
+              своей жизнью и врёт после первого же заказа по телефону. */}
+          <Field
+            label="Остаток на складе"
+            hint="Только для вас — на сайте не показывается. Пусто = не считаем"
+          >
+            <NumberInput
+              integer
+              value={draft.stockQty ?? null}
+              onChange={(stockQty) => patch({ stockQty })}
+              placeholder="не считаем"
             />
           </Field>
         </div>
@@ -259,21 +272,29 @@ export function ProductForm({
         title="Адрес страницы"
         note={
           creating
-            ? "Подставляются из названия. Их можно поправить сейчас — после сохранения они меняться не должны."
-            : "Менять нельзя: адрес уже в поиске, а код входит в ключ корзины."
+            ? "Подставляются из названия. Поправьте сейчас — потом адрес лучше не трогать."
+            : "Адрес поменять можно — со старого встанет переадресация. Код (id) нельзя: он входит в ключ корзины."
         }
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Адрес (slug)" required hint={`/product/${draft.slug || "…"}/`}>
-            <input
-              value={draft.slug}
-              onChange={(event) => patch({ slug: toSlug(event.target.value) })}
-              disabled={!creating}
-              className="field disabled:bg-brand-50 disabled:text-brand-400"
-            />
-          </Field>
+        <div className="grid items-start gap-4 sm:grid-cols-2">
+          <SlugField
+            label="Адрес (slug)"
+            value={draft.slug}
+            fromName={toSlug(draft.title)}
+            saved={creating ? undefined : initial.slug}
+            preview={(slug) => `/product/${slug || "…"}/`}
+            onChange={(slug) => patch({ slug: toSlug(slug) })}
+          />
 
-          <Field label="Код (id)" required hint="Внутренний, покупателю не виден">
+          <Field
+            label="Код (id)"
+            required
+            hint={
+              creating
+                ? "Внутренний, покупателю не виден"
+                : "Менять нельзя: код лежит в корзинах покупателей и в заказах"
+            }
+          >
             <input
               value={draft.id}
               onChange={(event) => patch({ id: toSlug(event.target.value) })}
@@ -553,6 +574,9 @@ function clean(product: Product): Product {
     seoTitle: trimmed(product.seoTitle),
     seoDescription: trimmed(product.seoDescription),
     oldPrice: product.oldPrice ? product.oldPrice : null,
+    // null и undefined схема принимает одинаково, но в JSON товара лишний
+    // ключ со значением null оставлять незачем.
+    stockQty: product.stockQty ?? undefined,
     featured: product.featured ? true : undefined,
     specs: product.specs.filter((spec) => spec.name.trim() && spec.value.trim()),
     tags: product.tags.map((tag) => tag.trim()).filter(Boolean),

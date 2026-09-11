@@ -1,15 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CatalogControls, type CatalogItem } from "@/components/CatalogControls";
+import { CategoryGrid } from "@/components/CategoryTile";
 import { JsonLd } from "@/components/JsonLd";
 import { ProductCard } from "@/components/ProductCard";
 import {
-  categoryUrl,
   getBrands,
-  getCategoryCounts,
-  getChildCategories,
+  getCategories,
   getProducts,
   getRootCategories,
   getSite,
@@ -31,7 +29,10 @@ export function generateMetadata(): Metadata {
 export default function CatalogPage() {
   const site = getSite();
   const categories = getRootCategories();
-  const counts = getCategoryCounts();
+  // Плитка показывает все разделы, включая вложенные: с этой страницы должен
+  // быть виден весь каталог, иначе до подраздела приходится идти через
+  // родителя — и покупателю, и краулеру.
+  const allCategories = getCategories();
   const products = getProducts();
   const brands = getBrands();
 
@@ -59,39 +60,11 @@ export default function CatalogPage() {
         </p>
       </header>
 
-      {/* Ссылки на разделы: и навигация, и перелинковка для краулера. */}
-      <nav className="mb-8 space-y-2" aria-label="Разделы каталога">
-        {categories.map((category) => {
-          const children = getChildCategories(category.id);
-          return (
-            <div key={category.id} className="flex flex-wrap items-center gap-2">
-              <Link
-                href={categoryUrl(category)}
-                className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-800 transition-colors hover:border-brand-600 hover:text-brand-700"
-              >
-                {category.name}
-                <span className="tnum text-xs text-brand-300">
-                  {counts[category.id] ?? 0}
-                </span>
-              </Link>
-              {/* Подразделы стоят тут же, помельче: с этой страницы должен
-                  быть виден весь каталог, иначе краулеру придётся искать
-                  их через страницу родителя. */}
-              {children.map((child) => (
-                <Link
-                  key={child.id}
-                  href={categoryUrl(child)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-brand-100 px-3 py-1.5 text-sm text-brand-500 transition-colors hover:border-brand-300 hover:text-brand-800"
-                >
-                  {child.name}
-                  <span className="tnum text-xs text-brand-300">
-                    {counts[child.id] ?? 0}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          );
-        })}
+      {/* Разделы: и навигация, и перелинковка для краулера. Раньше здесь
+          был список названий в рамочках — понять по нему, что за раздел
+          «Аксессуары», было нельзя. Теперь те же плитки, что на главной. */}
+      <nav className="mb-10" aria-label="Разделы каталога">
+        <CategoryGrid categories={allCategories} priorityCount={4} />
       </nav>
 
       <CatalogControls

@@ -6,7 +6,12 @@ import { useState, useTransition } from "react";
 
 import { deleteCategoryAction, saveCategoryAction } from "@/app/admin/actions";
 import { ImagePicker } from "@/components/admin/ImagePicker";
-import { Field, Problems, Section } from "@/components/admin/form-parts";
+import {
+  Field,
+  Problems,
+  Section,
+  SlugField,
+} from "@/components/admin/form-parts";
 import { SpinnerIcon, TrashIcon } from "@/components/icons";
 import { pluralize } from "@/lib/format";
 import type { Category } from "@/lib/schema";
@@ -26,6 +31,7 @@ interface CategoryFormProps {
   categories: Array<{
     id: string;
     name: string;
+    slug: string;
     parentId: string | null;
     count: number;
     children: number;
@@ -67,6 +73,13 @@ export function CategoryForm({
   // Товары есть, а переносить некуда — раздел последний. Удалять нельзя:
   // товары остались бы в базе без раздела, то есть нигде.
   const nowhereToMove = productCount > 0 && others.length === 0;
+
+  // У подраздела адрес вложенный: /catalog/aksessuary/maski/. Префикс нужен,
+  // чтобы в форме показывался настоящий адрес, а не укороченный.
+  const parentSlug = categories.find(
+    (entry) => entry.id === draft.parentId,
+  )?.slug;
+  const parentPrefix = parentSlug ? `/catalog/${parentSlug}/` : "/catalog/";
 
   const patch = (changes: Partial<Category>) => {
     setDraft((current) => ({ ...current, ...changes }));
@@ -116,8 +129,11 @@ export function CategoryForm({
           {creating ? "Новый раздел" : draft.name || "Без названия"}
         </h1>
         {!creating && (
+          // Адрес берём сохранённый, а не из черновика: несохранённый slug
+          // ведёт на страницу, которой ещё нет. И с префиксом родителя —
+          // у подраздела адрес вложенный.
           <Link
-            href={`/catalog/${draft.slug}/`}
+            href={`${parentPrefix}${initial.slug}/`}
             target="_blank"
             rel="noopener"
             className="text-xs text-brand-400 hover:text-brand-800"
@@ -230,21 +246,29 @@ export function CategoryForm({
         title="Адрес страницы"
         note={
           creating
-            ? "Подставляется из названия. Поправьте сейчас — после запуска менять нельзя."
-            : "Менять нельзя: адрес уже проиндексирован, старые ссылки отдадут 404."
+            ? "Подставляется из названия. Поправьте сейчас — потом адрес лучше не трогать."
+            : "Адрес поменять можно — со старого встанет переадресация. Код (id) нельзя: по нему товары привязаны к разделу."
         }
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Адрес (slug)" required hint={`/catalog/${draft.slug || "…"}/`}>
-            <input
-              value={draft.slug}
-              onChange={(event) => patch({ slug: toSlug(event.target.value) })}
-              disabled={!creating}
-              className="field disabled:bg-brand-50 disabled:text-brand-400"
-            />
-          </Field>
+        <div className="grid items-start gap-4 sm:grid-cols-2">
+          <SlugField
+            label="Адрес (slug)"
+            value={draft.slug}
+            fromName={toSlug(draft.name)}
+            saved={creating ? undefined : initial.slug}
+            preview={(slug) => `${parentPrefix}${slug || "…"}/`}
+            onChange={(slug) => patch({ slug: toSlug(slug) })}
+          />
 
-          <Field label="Код (id)" required hint="По нему товары привязаны к разделу">
+          <Field
+            label="Код (id)"
+            required
+            hint={
+              creating
+                ? "По нему товары привязаны к разделу"
+                : "Менять нельзя: по нему товары привязаны к разделу"
+            }
+          >
             <input
               value={draft.id}
               onChange={(event) => patch({ id: toSlug(event.target.value) })}
@@ -253,6 +277,14 @@ export function CategoryForm({
             />
           </Field>
         </div>
+
+        {hasOwnChildren && !creating && draft.slug !== initial.slug && (
+          <p className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900">
+            Slug раздела входит в адрес каждого подраздела, так что переедут и
+            они — {pluralize(childCount, "подраздел", "подраздела", "подразделов")}.
+            Переадресация встанет со всех старых адресов.
+          </p>
+        )}
       </Section>
 
       <Section title="Тексты">

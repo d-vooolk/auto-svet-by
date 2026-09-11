@@ -1,24 +1,34 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
-import { CartIcon, CheckIcon } from "@/components/icons";
-import { useCart, type CartItem } from "@/store/cart";
+import { CartIcon, MinusIcon, PlusIcon } from "@/components/icons";
+import { useCart, useHydrated, type CartItem } from "@/store/cart";
 
 /**
- * Кнопка «В корзину». После нажатия на две секунды превращается в «Добавлено»
- * — без этого на статике непонятно, сработало ли нажатие: страница не
- * перезагружается и визуально ничего не меняется.
+ * Кнопка «В корзину», а после добавления — счётчик и ссылка в корзину.
+ *
+ * Раньше кнопка на две секунды превращалась в «Добавлено» и возвращалась к
+ * исходной надписи. Получалось, что единственный след действия исчезал сам:
+ * человек отвлекался на секунду и потом не мог понять, положил он товар или
+ * нет, а чтобы это выяснить — шёл в корзину. Теперь состояние не пропадает:
+ * пока позиция в корзине, на месте кнопки стоит её количество, которое тут
+ * же можно поправить, и ссылка «В корзину» рядом.
+ *
+ * Количество берётся прямо из хранилища, а не из локального состояния: если
+ * тот же товар лежит на странице дважды (карточка в «Смотрите также» и в
+ * сетке каталога), оба места показывают одно и то же число.
  */
 
 interface AddToCartButtonProps {
   item: Omit<CartItem, "qty">;
+  /** Сколько добавить за одно нажатие. */
   qty?: number;
   disabled?: boolean;
   className?: string;
   label?: string;
-  /** Ссылка на страницу товара сразу после добавления. */
-  onAdded?: () => void;
+  /** Компактный вид для карточки в сетке каталога. */
+  compact?: boolean;
 }
 
 export function AddToCartButton({
@@ -27,47 +37,66 @@ export function AddToCartButton({
   disabled = false,
   className = "btn-primary w-full",
   label = "В корзину",
-  onAdded,
+  compact = false,
 }: AddToCartButtonProps) {
   const add = useCart((state) => state.add);
-  const [added, setAdded] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setQty = useCart((state) => state.setQty);
+  const inCart = useCart(
+    (state) => state.items.find((line) => line.key === item.key)?.qty ?? 0,
+  );
+  // HTML собран на сборке, когда корзина пуста. Пока гидратация не прошла,
+  // показываем кнопку — иначе React пожалуется на расхождение разметки.
+  const hydrated = useHydrated();
 
-  // Если пользователь ушёл со страницы, пока таймер шёл, setState на
-  // размонтированном компоненте нам не нужен.
-  useEffect(() => {
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, []);
-
-  const handleClick = () => {
-    add(item, qty);
-    setAdded(true);
-    onAdded?.();
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setAdded(false), 2000);
-  };
+  if (!hydrated || inCart === 0) {
+    return (
+      <button
+        type="button"
+        onClick={() => add(item, qty)}
+        disabled={disabled}
+        className={className}
+      >
+        <CartIcon className="h-4 w-4 shrink-0" />
+        {label}
+      </button>
+    );
+  }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={disabled}
-      className={className}
-      aria-live="polite"
-    >
-      {added ? (
-        <>
-          <CheckIcon className="h-4 w-4 shrink-0" />
-          Добавлено
-        </>
-      ) : (
-        <>
-          <CartIcon className="h-4 w-4 shrink-0" />
-          {label}
-        </>
-      )}
-    </button>
+    <div className={`flex items-stretch gap-2 ${compact ? "" : "w-full"}`}>
+      <div className="flex shrink-0 items-center rounded-control border border-brand-200 bg-white">
+        <button
+          type="button"
+          onClick={() => setQty(item.key, inCart - 1)}
+          className="px-2.5 py-2 text-brand-500 transition-colors hover:text-brand-900"
+          aria-label={inCart === 1 ? "Убрать из корзины" : "Уменьшить количество"}
+        >
+          <MinusIcon className="h-4 w-4" />
+        </button>
+        <span
+          className="tnum w-7 text-center text-sm font-semibold text-brand-900"
+          aria-live="polite"
+          aria-label={`В корзине: ${inCart}`}
+        >
+          {inCart}
+        </span>
+        <button
+          type="button"
+          onClick={() => add(item, 1)}
+          className="px-2.5 py-2 text-brand-500 transition-colors hover:text-brand-900"
+          aria-label="Увеличить количество"
+        >
+          <PlusIcon className="h-4 w-4" />
+        </button>
+      </div>
+
+      <Link
+        href="/cart/"
+        className="btn-primary min-w-0 flex-1 px-3 text-xs whitespace-nowrap sm:text-sm"
+      >
+        <CartIcon className="h-4 w-4 shrink-0" />
+        {compact ? "В корзину" : "Перейти в корзину"}
+      </Link>
+    </div>
   );
 }
