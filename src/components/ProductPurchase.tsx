@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { AddToCartButton } from "@/components/AddToCartButton";
 import { ContactButtons } from "@/components/ContactButtons";
@@ -19,7 +24,13 @@ import type { Channel } from "@/lib/contacts";
 import { formatPrice } from "@/lib/format";
 import { pickUrl, type ImageMap } from "@/lib/image-types";
 import type { Product } from "@/lib/schema";
-import { defaultSelection, resolveVariant, type Selection } from "@/lib/variant";
+import {
+  defaultSelection,
+  resolveVariant,
+  selectionFromQuery,
+  variantQuery,
+  type Selection,
+} from "@/lib/variant";
 import { useCart, useHydrated } from "@/store/cart";
 
 /**
@@ -72,6 +83,35 @@ function shift(
   return { key: galleryKey, index: (at + delta + count) % count };
 }
 
+/* ------------------------------------------------------------------ */
+
+/**
+ * Строка параметров адреса — как внешний источник данных.
+ *
+ * Через useSyncExternalStore, а не через эффект с setState: при сборке
+ * адресной строки не существует, и серверный снимок здесь пустой. React
+ * отрисует страницу ровно так, как она лежит в HTML, сверит снимок сразу
+ * после гидратации и перерисует, только если в адресе действительно что-то
+ * было. Ни расхождения разметки, ни лишнего прохода на обычном заходе.
+ */
+function subscribeToUrl(onChange: () => void): () => void {
+  // Наши собственные replaceState события не рождают, и это к лучшему:
+  // выбор опции и так живёт в состоянии. Слушаем только кнопки браузера.
+  window.addEventListener("popstate", onChange);
+  return () => window.removeEventListener("popstate", onChange);
+}
+
+const readUrlSearch = () => window.location.search;
+const readEmptySearch = () => "";
+
+function useUrlSearch(): string {
+  return useSyncExternalStore(
+    subscribeToUrl,
+    readUrlSearch,
+    readEmptySearch,
+  );
+}
+
 export function ProductPurchase({
   product,
   images,
@@ -85,11 +125,34 @@ export function ProductPurchase({
   phoneHref,
   messengers,
 }: ProductPurchaseProps) {
-  const [selection, setSelection] = useState<Selection>(() =>
-    defaultSelection(product),
-  );
+  /*
+   * Выбранный вариант. Пока по опциям не щёлкали — он берётся из адреса
+   * страницы: /product/…/?cokol=h7 открывает сразу этот цоколь.
+   *
+   * Такие адреса стоят в разметке товара (по одному предложению на каждую
+   * комбинацию) и по ним приходят из выдачи, значит, они обязаны работать.
+   */
+  const search = useUrlSearch();
+  const [chosen, setChosen] = useState<Selection | null>(null);
+  const selection: Selection = chosen ?? {
+    ...defaultSelection(product),
+    ...selectionFromQuery(product, search),
+  };
+
   const [qty, setQty] = useState(1);
   const [lightbox, setLightbox] = useState(false);
+
+  const choose = (groupId: string, valueId: string) => {
+    const next = { ...selection, [groupId]: valueId };
+    setChosen(next);
+    // Адрес обновляем без новой записи в истории: «назад» должен уводить со
+    // страницы товара, а не отматывать переключения цоколя по одному.
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${variantQuery(product, next)}`,
+    );
+  };
 
   const variant = resolveVariant(product, selection);
 
@@ -313,12 +376,7 @@ export function ProductPurchase({
                     <button
                       key={value.id}
                       type="button"
-                      onClick={() =>
-                        setSelection((current) => ({
-                          ...current,
-                          [group.id]: value.id,
-                        }))
-                      }
+                      onClick={() => choose(group.id, value.id)}
                       aria-pressed={selected}
                       title={outOfStock ? "Нет в наличии" : undefined}
                       className={`rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors ${

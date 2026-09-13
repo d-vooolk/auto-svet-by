@@ -114,6 +114,53 @@ export function resolveVariant(
   };
 }
 
+/**
+ * Выбранные опции строкой запроса: «?cokol=h7&temperatura=5000k».
+ *
+ * Один и тот же адрес нужен в двух местах: в разметке — как адрес
+ * предложения по этой комбинации, и в браузере — чтобы ссылку на конкретный
+ * цоколь можно было скинуть в переписке. Собирается здесь, в чистом модуле,
+ * потому что читают его и сервер, и клиент.
+ *
+ * Порядок параметров — как объявлены наборы опций, а не как их выбирали:
+ * иначе один и тот же вариант получал бы разные адреса.
+ */
+export function variantQuery(product: Product, selection: Selection): string {
+  const params = product.optionGroups
+    .map((group) => [group.id, selection[group.id]] as const)
+    .filter(([, value]) => Boolean(value))
+    .map(
+      ([group, value]) =>
+        `${encodeURIComponent(group)}=${encodeURIComponent(value)}`,
+    )
+    .join("&");
+
+  return params ? `?${params}` : "";
+}
+
+/**
+ * Обратная операция: выбор, записанный в адресе страницы.
+ *
+ * Чужие и устаревшие значения отбрасываются молча — ссылка на цоколь,
+ * которого больше нет в товаре, должна открыть товар, а не сломать страницу.
+ */
+export function selectionFromQuery(
+  product: Product,
+  search: string,
+): Selection {
+  const params = new URLSearchParams(search);
+  const selection: Selection = {};
+
+  for (const group of product.optionGroups) {
+    const wanted = params.get(group.id);
+    if (wanted && group.values.some((value) => value.id === wanted)) {
+      selection[group.id] = wanted;
+    }
+  }
+
+  return selection;
+}
+
 /** Все комбинации опций. Нужен для «от … р.» и для валидности JSON-LD. */
 export function allSelections(product: Product): Selection[] {
   let combos: Selection[] = [{}];

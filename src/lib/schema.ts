@@ -133,6 +133,15 @@ const deliveryMethodSchema = z.strictObject({
   freeFrom: money.nullable().optional(),
   requiresAddress: z.boolean(),
   note: z.string().optional(),
+  /**
+   * Срок доставки в рабочих днях — от и до.
+   *
+   * Нужен разметке OfferShippingDetails: по ней Google считает дату «получите
+   * к …» и показывает её в выдаче рядом с ценой. Без сроков разметка доставки
+   * остаётся, но такой строки в сниппете не будет.
+   */
+  daysMin: z.number().int().nonnegative().optional(),
+  daysMax: z.number().int().nonnegative().optional(),
 });
 
 export const siteSchema = z.strictObject({
@@ -167,6 +176,15 @@ export const siteSchema = z.strictObject({
   }),
   payment: z.array(z.string()).default([]),
   warranty: z.string().default(""),
+  /**
+   * Сколько дней на возврат товара. 0 — не заявляем, и тогда разметки
+   * возврата на страницах товаров не будет.
+   *
+   * Число попадает в MerchantReturnPolicy, поэтому оно обязано совпадать с
+   * тем, что написано на странице доставки: расхождение разметки и текста —
+   * это ручные санкции, а не просто неточность.
+   */
+  returnDays: z.number().int().nonnegative().default(0),
   features: z
     .array(
       z.strictObject({ title: z.string().min(1), text: z.string().min(1) }),

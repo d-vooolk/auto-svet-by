@@ -228,6 +228,19 @@ export function SettingsForm({ site: initial }: { site: Site }) {
             className="field"
           />
         </Field>
+
+        <Field
+          label="Возврат в течение, дней"
+          hint="Попадает и на страницу доставки, и в разметку товара для Google. Должно совпадать с тем, что вы реально обещаете. 0 — не заявлять возврат"
+        >
+          <NumberInput
+            integer
+            value={draft.returnDays}
+            onChange={(returnDays) => patch({ returnDays: returnDays ?? 0 })}
+            placeholder="14"
+            className="field tnum w-32"
+          />
+        </Field>
       </Section>
 
       {/* -------------------------- Преимущества ----------------------- */}
@@ -327,6 +340,30 @@ function DeliveryEditor({
                 value={method.freeFrom ?? null}
                 onChange={(freeFrom) => update(index, { freeFrom })}
                 placeholder="не бывает"
+                className="field tnum py-2 text-sm"
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="label mb-1 text-xs">Срок от, дней</span>
+              <NumberInput
+                integer
+                value={method.daysMin ?? null}
+                onChange={(daysMin) => update(index, { daysMin: daysMin ?? undefined })}
+                placeholder="0 — в день заказа"
+                className="field tnum py-2 text-sm"
+              />
+            </label>
+
+            <label className="block">
+              <span className="label mb-1 text-xs">Срок до, дней</span>
+              <NumberInput
+                integer
+                value={method.daysMax ?? null}
+                onChange={(daysMax) => update(index, { daysMax: daysMax ?? undefined })}
+                placeholder="не указан"
                 className="field tnum py-2 text-sm"
               />
             </label>

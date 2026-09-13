@@ -651,12 +651,19 @@ export function saveSite(input: unknown): SaveResult {
     return { ok: false, problems: describe(parsed.error.issues) };
   }
 
-  getDb()
-    .prepare(
-      `INSERT INTO settings (key, value) VALUES ('site', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-    )
-    .run(JSON.stringify(parsed.data));
+  const db = getDb();
+  const save = db.prepare(
+    `INSERT INTO settings (key, value) VALUES (@key, @value)
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+  );
+
+  db.transaction(() => {
+    save.run({ key: "site", value: JSON.stringify(parsed.data) });
+    // Время правки: по нему в sitemap.xml стоит lastmod у страниц, собранных
+    // из настроек — доставки, контактов и «о магазине». Раньше там было
+    // время сборки, и каждый деплой врал поиску, что страницы обновились.
+    save.run({ key: "site:updated_at", value: String(Date.now()) });
+  })();
 
   bumpCatalogVersion();
   return { ok: true };

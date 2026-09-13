@@ -1,5 +1,8 @@
 import { revalidatePath } from "next/cache";
 
+import { pingIndexNow } from "./indexnow";
+import { absoluteUrl } from "./seo";
+
 /**
  * Пересборка страниц витрины после правки в админке.
  *
@@ -20,6 +23,8 @@ const SHARED = [
   "/sitemap.xml",
   "/variants.json", // прайс, по которому корзина сверяет цены
   "/search-index.json", // индекс поиска
+  "/feed.xml", // фид для Google Merchant Center
+  "/yml.xml", // фид для Яндекса, Onliner и Kufar
 ];
 
 function revalidateAll(paths: Iterable<string>): void {
@@ -29,6 +34,18 @@ function revalidateAll(paths: Iterable<string>): void {
 /** Адреса разделов приходят с конечным слешем, здесь он лишний. */
 function trim(path: string): string {
   return path.length > 1 ? path.replace(/\/$/, "") : path;
+}
+
+/**
+ * Сообщить поисковикам об изменившихся страницах.
+ *
+ * Адреса берём канонические — со слешем на конце и полным доменом, ровно
+ * такие, как стоят в canonical и в sitemap. Пути для revalidatePath для этого
+ * не годятся: у них слеш срезан, и поисковик получил бы адрес, с которого
+ * сайт отвечает редиректом.
+ */
+function announce(paths: string[]): void {
+  pingIndexNow(paths.map((path) => absoluteUrl(path)));
 }
 
 /**
@@ -56,6 +73,11 @@ export function revalidateProduct(
   for (const path of previous?.categoryPaths ?? []) paths.add(trim(path));
 
   revalidateAll(paths);
+
+  // Поисковикам сообщаем только про сам товар и его разделы: главная и
+  // каталог меняются от каждой правки, и звать на них краулера по десять
+  // раз в день — это шум, за который IndexNow перестаёт слушать.
+  announce([`/product/${slug}/`, ...categoryPaths]);
 }
 
 /**
@@ -76,6 +98,8 @@ export function revalidateCategory(
   // страницы товаров тоже надо пересобрать.
   revalidatePath("/product/[slug]", "page");
   revalidateAll(all);
+
+  announce(paths);
 }
 
 /**

@@ -42,6 +42,11 @@ async function read(url) {
   return response.text();
 }
 
+/** Сегодняшняя дата как «2026-09-13» — для сравнения с priceValidUntil. */
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function head(html) {
   const end = html.indexOf("</head>");
   return end === -1 ? html : html.slice(0, end);
@@ -136,11 +141,55 @@ console.log("\nТовар /product/osram-night-breaker-200/");
   const blocks = jsonLd(html);
   const product = blocks.find((block) => block["@type"] === "Product");
   check("есть разметка Product", Boolean(product));
+  // У товара с опциями предложений столько же, сколько комбинаций: у каждой
+  // своя цена, свой артикул и свой адрес. Право на товарную карточку в
+  // выдаче даёт только Offer — у AggregateOffer нет продавца, и Google такие
+  // карточки не показывает.
+  const offers = Array.isArray(product?.offers)
+    ? product.offers
+    : [product?.offers].filter(Boolean);
+
   check(
     "у Product заполнены offers",
-    Boolean(product?.offers?.lowPrice || product?.offers?.price),
-    JSON.stringify(product?.offers ?? {}).slice(0, 120),
+    offers.length > 0 &&
+      offers.every((offer) => offer.price || offer.lowPrice),
+    `предложений: ${offers.length}`,
   );
+  check(
+    "у каждого варианта свой адрес",
+    new Set(offers.map((offer) => offer.url)).size === offers.length,
+    offers[0]?.url ?? "",
+  );
+  check(
+    "в предложениях есть условия доставки",
+    offers.every((offer) => offer.shippingDetails?.length > 0),
+  );
+  check(
+    "в предложениях есть условия возврата",
+    offers.every(
+      (offer) => offer.hasMerchantReturnPolicy?.merchantReturnDays > 0,
+    ),
+    `дней: ${offers[0]?.hasMerchantReturnPolicy?.merchantReturnDays ?? "нет"}`,
+  );
+  check(
+    "priceValidUntil ещё не истёк",
+    offers.every(
+      (offer) => !offer.priceValidUntil || offer.priceValidUntil > today(),
+    ),
+    offers[0]?.priceValidUntil ?? "",
+  );
+
+  // Адрес варианта из разметки обязан открывать именно этот вариант —
+  // иначе мы шлём людей из выдачи не туда.
+  const variantUrl = offers.find((offer) => offer.url?.includes("?"))?.url;
+  if (variantUrl) {
+    const variant = await read(new URL(variantUrl).pathname + new URL(variantUrl).search);
+    check(
+      "адрес варианта отдаёт страницу товара",
+      variant.includes("<h1"),
+      variantUrl.replace(BASE, ""),
+    );
+  }
   check(
     "есть разметка BreadcrumbList",
     blocks.some((block) => block["@type"] === "BreadcrumbList"),
@@ -165,9 +214,36 @@ console.log("\nСлужебные файлы");
   check("sitemap.xml не пустой", urls > 5, `адресов: ${urls}`);
   check("в sitemap нет корзины", !sitemap.includes("/cart/"));
 
+  // Фотографии в sitemap проверяем только если они вообще есть: на свежей
+  // установке манифест пуст, и падать из-за этого нечему.
+  const catalog = await read("/catalog/");
+  if (/\/img\/[^"]+\.(?:avif|webp|jpg)/.test(catalog)) {
+    check("в sitemap перечислены фотографии", sitemap.includes("<image:loc>"));
+  }
+
   const robots = await read("/robots.txt");
   check("robots.txt ссылается на sitemap", robots.includes("sitemap.xml"));
   check("robots.txt закрывает корзину", robots.includes("/cart/"));
+
+  // Товарные фиды: через них каталог попадает в Google Покупки, Яндекс,
+  // Onliner и Kufar.
+  const feed = await read("/feed.xml");
+  const items = (feed.match(/<item>/g) ?? []).length;
+  check("feed.xml собран", items > 0, `предложений: ${items}`);
+  check("в feed.xml есть цены", feed.includes("<g:price>"));
+  check(
+    "в feed.xml указано отсутствие штрихкодов",
+    feed.includes("<g:identifier_exists>no</g:identifier_exists>"),
+  );
+
+  const yml = await read("/yml.xml");
+  const ymlOffers = (yml.match(/<offer /g) ?? []).length;
+  check("yml.xml собран", ymlOffers > 0, `предложений: ${ymlOffers}`);
+  check("в yml.xml номера разделов числовые", /<category id="\d+"/.test(yml));
+  check(
+    "в yml.xml варианты привязаны к товару",
+    !yml.includes("group_id=\"undefined\""),
+  );
 
   const variants = JSON.parse(await read("/variants.json"));
   check(

@@ -5,7 +5,8 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { JsonLd } from "@/components/JsonLd";
 import { CheckIcon, ShieldIcon, TruckIcon } from "@/components/icons";
 import { getSite } from "@/lib/catalog";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, plural } from "@/lib/format";
+import type { DeliveryMethod } from "@/lib/schema";
 import { buildMetadata } from "@/lib/seo";
 
 export function generateMetadata(): Metadata {
@@ -40,6 +41,21 @@ const FAQ = [
     a: "Да, Европочтой или Белпочтой. Срок 1–3 рабочих дня, оплата при получении в отделении.",
   },
 ];
+
+/** «В день заказа», «1–3 рабочих дня» — из сроков способа доставки. */
+function deliveryTerm(method: DeliveryMethod): string {
+  const min = method.daysMin ?? method.daysMax ?? 0;
+  const max = method.daysMax ?? method.daysMin ?? 0;
+
+  if (max === 0) return "В день заказа";
+  if (min === 0) {
+    return `До ${max} ${plural(max, "рабочего дня", "рабочих дней", "рабочих дней")}`;
+  }
+  if (min === max) {
+    return `${min} ${plural(min, "рабочий день", "рабочих дня", "рабочих дней")}`;
+  }
+  return `${min}–${max} ${plural(max, "рабочий день", "рабочих дня", "рабочих дней")}`;
+}
 
 export default function DeliveryPage() {
   const site = getSite();
@@ -88,6 +104,11 @@ export default function DeliveryPage() {
                     : formatPrice(method.price, site.currencySymbol)}
                 </span>
               </div>
+              {(method.daysMin != null || method.daysMax != null) && (
+                <p className="mb-2 text-sm font-medium text-brand-700">
+                  {deliveryTerm(method)}
+                </p>
+              )}
               {method.note && (
                 <p className="text-sm leading-relaxed text-brand-500">
                   {method.note}
@@ -138,6 +159,18 @@ export default function DeliveryPage() {
             Если вариант не подошёл по цоколю или стороне — обменяем. Товар с
             заводским дефектом меняем или возвращаем деньги.
           </p>
+          {site.returnDays > 0 && (
+            // Это же число уходит в разметку MerchantReturnPolicy на каждой
+            // странице товара — текст и разметка обязаны совпадать.
+            <p className="mt-3 text-sm leading-relaxed text-brand-600">
+              Вернуть товар надлежащего качества можно в течение{" "}
+              {site.returnDays}{" "}
+              {plural(site.returnDays, "дня", "дней", "дней")} с момента
+              получения — в сохранной упаковке и без следов установки. Возврат
+              и обмен принимаем в магазине, пересылку обратно оплачивает
+              покупатель.
+            </p>
+          )}
         </div>
       </section>
 
