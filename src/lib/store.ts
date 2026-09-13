@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+
 import { bumpCatalogVersion, getDb } from "./db";
 import { pluralize } from "./format";
 import { forgetRedirectsTo, rememberRedirect } from "./redirects";
@@ -265,8 +267,11 @@ export function nextSku(): string {
     rows.map((row) => row.sku).filter((sku): sku is string => Boolean(sku)),
   );
 
+  // crypto, а не Math.random: номер не секрет, но предсказуемый счётчик
+  // случайностей здесь и не нужен, а статические анализаторы справедливо
+  // придираются к Math.random в генераторах идентификаторов.
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    const sku = String(100000 + Math.floor(Math.random() * 900000));
+    const sku = String(crypto.randomInt(100000, 1000000));
     if (!used.has(sku)) return sku;
   }
 

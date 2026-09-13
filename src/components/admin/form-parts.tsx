@@ -313,7 +313,12 @@ export function Suggest({
         autoComplete="off"
         role="combobox"
         aria-expanded={visible}
-        aria-controls={listId}
+        aria-controls={visible ? listId : undefined}
+        // Какой вариант сейчас подсвечен — иначе стрелки вверх-вниз двигают
+        // подсветку молча, и голосовому доступу нечего произнести.
+        aria-activedescendant={
+          visible && active >= 0 ? `${listId}-${active}` : undefined
+        }
         aria-autocomplete="list"
       />
 
@@ -321,12 +326,18 @@ export function Suggest({
         <span
           id={listId}
           role="listbox"
+          aria-label="Подсказки"
           className="absolute inset-x-0 top-full z-20 mt-1 block max-h-56 overflow-auto rounded-xl border border-brand-200 bg-white py-1 shadow-lg"
         >
           {matches.map((option, index) => (
-            <button
+            // span с role="option", а не <button>: во-первых, так и описан
+            // список выбора в ARIA — кнопок внутри listbox быть не должно;
+            // во-вторых, всё это лежит внутри <label> из Field, а в label
+            // может быть только одно поле ввода. Кнопки делали его вторым, и
+            // подпись «Бренд» перестала бы однозначно указывать на поле.
+            <span
               key={option}
-              type="button"
+              id={`${listId}-${index}`}
               role="option"
               aria-selected={index === active}
               // mousedown, а не click: click приходит уже после blur, а blur
@@ -337,14 +348,14 @@ export function Suggest({
                 pick(option);
               }}
               onMouseEnter={() => setActive(index)}
-              className={`block w-full px-3 py-2 text-left text-sm ${
+              className={`block cursor-pointer px-3 py-2 text-left text-sm ${
                 index === active
                   ? "bg-brand-50 text-brand-900"
                   : "text-brand-600"
               }`}
             >
               {option}
-            </button>
+            </span>
           ))}
         </span>
       )}

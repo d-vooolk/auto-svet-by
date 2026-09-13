@@ -249,32 +249,41 @@ export function ProductForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field
-            label="Артикул"
-            hint="Шесть цифр, у каждого товара свои. Подставляется сам"
-          >
-            <span className="flex gap-2">
+          {/* Кнопка стоит под полем, а не внутри Field: Field — это
+              <label>, а в нём может быть только одно поле ввода, иначе
+              непонятно, к чему относится подпись, и щелчок по ней попадает
+              не туда. Точно так же сделано в SlugField. */}
+          <div>
+            <Field
+              label="Артикул"
+              hint="Шесть цифр, у каждого товара свои. Подставляется сам"
+            >
               <input
                 value={draft.sku ?? ""}
                 onChange={(event) => patch({ sku: event.target.value })}
-                className="field tnum min-w-0"
+                className="field tnum"
                 inputMode="numeric"
               />
-              <button
-                type="button"
-                onClick={regenerateSku}
-                disabled={skuPending}
-                title="Сгенерировать новый шестизначный артикул"
-                className="btn-secondary shrink-0 px-3 py-2 text-xs"
-              >
-                {skuPending ? (
+            </Field>
+
+            <button
+              type="button"
+              onClick={regenerateSku}
+              disabled={skuPending}
+              className="btn-secondary mt-2 py-1.5 text-xs"
+            >
+              {skuPending ? (
+                <>
                   <SpinnerIcon className="h-4 w-4 animate-spin" />
-                ) : (
-                  "Новый"
-                )}
-              </button>
-            </span>
-          </Field>
+                  Генерируем…
+                </>
+              ) : draft.sku ? (
+                "Перегенерировать"
+              ) : (
+                "Сгенерировать"
+              )}
+            </button>
+          </div>
 
           <Field label="Плашка на карточке" hint="«Хит», «Новинка», «Распродажа»">
             <input
