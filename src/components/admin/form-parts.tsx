@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { AlertIcon } from "@/components/icons";
 
@@ -212,6 +212,143 @@ export function SlugField({
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * Поле с подсказкой из уже введённых значений — бренд товара.
+ *
+ * Не <select>: список брендов открытый, новый бренд заводится прямо в этом
+ * поле, и выбирать «— другой —», чтобы потом набрать название, никто не станет.
+ * И не <datalist>: браузеры показывают его каждый по-своему, а часть мобильных
+ * не показывает вовсе.
+ *
+ * Набранное остаётся набранным: подсказка сама ничего не подставляет, пока по
+ * ней не щёлкнули или не выбрали её с клавиатуры. Поэтому бренд, которого в
+ * списке ещё нет, поле не мешает завести — он просто сохранится как введён.
+ */
+export function Suggest({
+  value,
+  onChange,
+  options,
+  placeholder,
+  limit = 8,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  /** Уже встречавшиеся значения. Порядок сохраняется. */
+  options: string[];
+  placeholder?: string;
+  /** Сколько подсказок показывать за раз. */
+  limit?: number;
+}) {
+  const listId = useId();
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+
+  const query = value.trim().toLowerCase();
+  // Вхождение, а не начало строки: «свет» должно находить и «Автосвет».
+  const matches = (
+    query
+      ? options.filter((option) => option.toLowerCase().includes(query))
+      : options
+  ).slice(0, limit);
+
+  // Единственная подсказка, совпадающая с набранным дословно, не добавляет
+  // ничего — показывать её незачем.
+  const nothingToAdd =
+    matches.length === 1 && matches[0].toLowerCase() === query;
+  const visible = open && matches.length > 0 && !nothingToAdd;
+
+  const pick = (option: string) => {
+    onChange(option);
+    setOpen(false);
+    setActive(-1);
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      setOpen(false);
+      return;
+    }
+    if (!visible) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setOpen(true);
+        setActive(0);
+      }
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActive((current) => (current + 1) % matches.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActive((current) => (current <= 0 ? matches.length - 1 : current - 1));
+    } else if (event.key === "Enter" && active >= 0) {
+      // Enter по выбранной подсказке — это выбор, а не отправка формы.
+      event.preventDefault();
+      pick(matches[active]);
+    }
+  };
+
+  return (
+    // span, а не div: всё это лежит внутри <label> из Field, а label по
+    // стандарту держит только строчное содержимое.
+    <span className="relative block">
+      <input
+        value={value}
+        onChange={(event) => {
+          onChange(event.target.value);
+          setOpen(true);
+          setActive(-1);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder}
+        className="field"
+        // Поверх наших подсказок браузер показал бы ещё и свои — из того, что
+        // когда-то вводили в поле с таким именем.
+        autoComplete="off"
+        role="combobox"
+        aria-expanded={visible}
+        aria-controls={listId}
+        aria-autocomplete="list"
+      />
+
+      {visible && (
+        <span
+          id={listId}
+          role="listbox"
+          className="absolute inset-x-0 top-full z-20 mt-1 block max-h-56 overflow-auto rounded-xl border border-brand-200 bg-white py-1 shadow-lg"
+        >
+          {matches.map((option, index) => (
+            <button
+              key={option}
+              type="button"
+              role="option"
+              aria-selected={index === active}
+              // mousedown, а не click: click приходит уже после blur, а blur
+              // закрывает список — щёлкать было бы не по чему. preventDefault
+              // заодно оставляет курсор в поле.
+              onMouseDown={(event) => {
+                event.preventDefault();
+                pick(option);
+              }}
+              onMouseEnter={() => setActive(index)}
+              className={`block w-full px-3 py-2 text-left text-sm ${
+                index === active
+                  ? "bg-brand-50 text-brand-900"
+                  : "text-brand-600"
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </span>
+      )}
+    </span>
   );
 }
 

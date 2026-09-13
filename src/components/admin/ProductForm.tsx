@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { deleteProductAction, saveProductAction } from "@/app/admin/actions";
+import {
+  deleteProductAction,
+  generateSkuAction,
+  saveProductAction,
+} from "@/app/admin/actions";
 import { ImagePicker } from "@/components/admin/ImagePicker";
 import { OptionGroupsEditor } from "@/components/admin/OptionGroupsEditor";
 import {
@@ -13,6 +17,7 @@ import {
   Problems,
   Section,
   SlugField,
+  Suggest,
 } from "@/components/admin/form-parts";
 import { SpinnerIcon, TrashIcon } from "@/components/icons";
 import type { Product, Spec } from "@/lib/schema";
@@ -40,6 +45,8 @@ interface ProductFormProps {
     parentId: string | null;
     children: number;
   }>;
+  /** Бренды, которые уже есть в каталоге — для подсказки в поле бренда. */
+  brands: string[];
   /** Пусто при создании: у нового товара ещё нет прежнего кода. */
   previousId?: string;
   /** Готовые ссылки на миниатюры уже выбранных фото. */
@@ -50,6 +57,7 @@ interface ProductFormProps {
 export function ProductForm({
   product: initial,
   categories,
+  brands,
   previousId,
   thumbs,
   currencySymbol,
@@ -60,6 +68,7 @@ export function ProductForm({
   const [problems, setProblems] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [skuPending, setSkuPending] = useState(false);
 
   const creating = !previousId;
 
@@ -84,12 +93,30 @@ export function ProductForm({
         return;
       }
       setSaved(true);
+      // Наверх — там и сообщение об успехе, и начало карточки. Кнопка
+      // «Сохранить» висит внизу, и без этого человек остаётся смотреть на
+      // подвал формы, не понимая, сохранилось ли.
+      window.scrollTo({ top: 0, behavior: "smooth" });
       if (creating) {
         router.push(`/admin/products/${draft.id}/`);
       } else {
         router.refresh();
       }
     });
+  };
+
+  /**
+   * Новый артикул — с сервера: свободный номер видно только по всей базе.
+   * Не в startTransition: тот же pending выключал бы кнопку «Сохранить».
+   */
+  const regenerateSku = async () => {
+    setSkuPending(true);
+    try {
+      const result = await generateSkuAction();
+      patch({ sku: result.sku });
+    } finally {
+      setSkuPending(false);
+    }
   };
 
   const remove = () => {
@@ -177,11 +204,14 @@ export function ProductForm({
             </select>
           </Field>
 
-          <Field label="Бренд" hint="Попадает в фильтр каталога">
-            <input
+          <Field
+            label="Бренд"
+            hint="Попадает в фильтр каталога. Начните вводить — предложим из уже заведённых"
+          >
+            <Suggest
               value={draft.brand ?? ""}
-              onChange={(event) => patch({ brand: event.target.value })}
-              className="field"
+              onChange={(brand) => patch({ brand })}
+              options={brands}
               placeholder="Hella"
             />
           </Field>
@@ -219,12 +249,31 @@ export function ProductForm({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Артикул">
-            <input
-              value={draft.sku ?? ""}
-              onChange={(event) => patch({ sku: event.target.value })}
-              className="field"
-            />
+          <Field
+            label="Артикул"
+            hint="Шесть цифр, у каждого товара свои. Подставляется сам"
+          >
+            <span className="flex gap-2">
+              <input
+                value={draft.sku ?? ""}
+                onChange={(event) => patch({ sku: event.target.value })}
+                className="field tnum min-w-0"
+                inputMode="numeric"
+              />
+              <button
+                type="button"
+                onClick={regenerateSku}
+                disabled={skuPending}
+                title="Сгенерировать новый шестизначный артикул"
+                className="btn-secondary shrink-0 px-3 py-2 text-xs"
+              >
+                {skuPending ? (
+                  <SpinnerIcon className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Новый"
+                )}
+              </button>
+            </span>
           </Field>
 
           <Field label="Плашка на карточке" hint="«Хит», «Новинка», «Распродажа»">
@@ -309,7 +358,7 @@ export function ProductForm({
       <Section title="Описание">
         <Field
           label="Короткое описание"
-          hint="Одна-две фразы под заголовком и в выдаче поиска"
+          hint="Одна-две фразы. Идут перед полным описанием и в выдаче поиска"
         >
           <textarea
             value={draft.excerpt ?? ""}

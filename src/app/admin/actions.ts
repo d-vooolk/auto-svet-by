@@ -27,6 +27,7 @@ import {
   deleteProducts,
   getCategoryRaw,
   getProductRaw,
+  nextSku,
   reorderCategories,
   reorderProducts,
   saveCategory,
@@ -128,6 +129,18 @@ export async function saveProductAction(
   });
 
   return ok();
+}
+
+/**
+ * Свободный артикул для формы товара — кнопка «перегенерировать».
+ *
+ * Действием, а не значением в пропсах страницы: кнопку жмут на уже открытой
+ * форме, и номер нужен на момент нажатия. Номер, посчитанный при загрузке
+ * страницы, к этому времени мог достаться другому товару.
+ */
+export async function generateSkuAction(): Promise<{ sku: string }> {
+  await requireAdmin();
+  return { sku: nextSku() };
 }
 
 export async function deleteProductAction(id: string): Promise<FormState> {
@@ -352,7 +365,7 @@ export async function setOrderNoteAction(
   note: string,
 ): Promise<FormState> {
   await requireAdmin();
-  setOrderNote(id, String(note ?? ""));
+  setOrderNote(id, String(note ?? "").trim());
   return ok();
 }
 

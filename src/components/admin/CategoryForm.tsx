@@ -288,7 +288,10 @@ export function CategoryForm({
       </Section>
 
       <Section title="Тексты">
-        <Field label="Короткое описание" hint="Строка под названием на плитке каталога">
+        <Field
+          label="Короткое описание"
+          hint="Первый абзац текста под сеткой товаров и описание для поиска"
+        >
           <textarea
             value={draft.excerpt ?? ""}
             onChange={(event) => patch({ excerpt: event.target.value })}

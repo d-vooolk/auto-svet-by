@@ -1,6 +1,7 @@
 import { bumpCatalogVersion, getDb } from "./db";
 import { pluralize } from "./format";
 import { forgetRedirectsTo, rememberRedirect } from "./redirects";
+import { deepTrim } from "./text";
 import {
   categorySchema,
   parseOrThrow,
@@ -37,7 +38,7 @@ export type SaveResult =
  * с product.id — идентификатор менять нельзя, он входит в ключ корзины.
  */
 export function saveProduct(input: unknown, previousId?: string): SaveResult {
-  const parsed = productSchema.safeParse(input);
+  const parsed = productSchema.safeParse(deepTrim(input));
   if (!parsed.success) {
     return { ok: false, problems: describe(parsed.error.issues) };
   }
@@ -85,6 +86,23 @@ export function saveProduct(input: unknown, previousId?: string): SaveResult {
     problems.push(
       `Адрес «${product.slug}» уже занят товаром «${slugTaken.id}» — придумайте другой`,
     );
+  }
+
+  // Артикул уникален: по нему товар находят в админке и называют по телефону,
+  // а два товара с одним артикулом превращают этот поиск в угадайку. Отдельной
+  // колонки под него нет — он лежит в JSON, оттуда и сравниваем.
+  if (product.sku) {
+    const skuTaken = db
+      .prepare(
+        `SELECT id FROM products
+           WHERE json_extract(data, '$.sku') = ? AND id IS NOT ?`,
+      )
+      .get(product.sku, previousId ?? null) as { id: string } | undefined;
+    if (skuTaken) {
+      problems.push(
+        `Артикул «${product.sku}» уже стоит у товара «${skuTaken.id}» — перегенерируйте его`,
+      );
+    }
   }
 
   if (problems.length) return { ok: false, problems };
@@ -231,6 +249,52 @@ export function setProductStockQty(id: string, qty: number | null): SaveResult {
   return { ok: true };
 }
 
+/**
+ * Свободный артикул: шесть цифр, каких нет ни у одного товара.
+ *
+ * Случайный, а не «последний плюс один»: подряд идущие номера у соседних
+ * товаров читаются как один и тот же, и в заказе их легко перепутать.
+ * Уникальность здесь только предварительная — окончательно её проверяет
+ * saveProduct, потому что между генерацией и сохранением проходит время.
+ */
+export function nextSku(): string {
+  const rows = getDb()
+    .prepare("SELECT json_extract(data, '$.sku') AS sku FROM products")
+    .all() as Array<{ sku: string | null }>;
+  const used = new Set(
+    rows.map((row) => row.sku).filter((sku): sku is string => Boolean(sku)),
+  );
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const sku = String(100000 + Math.floor(Math.random() * 900000));
+    if (!used.has(sku)) return sku;
+  }
+
+  // Полсотни попыток подряд попали в занятые — значит, свободных номеров почти
+  // не осталось, и перебрать диапазон по порядку уже дешевле, чем гадать.
+  for (let code = 100000; code <= 999999; code += 1) {
+    const sku = String(code);
+    if (!used.has(sku)) return sku;
+  }
+
+  throw new Error("Свободных шестизначных артикулов не осталось");
+}
+
+/**
+ * Бренды, которые уже встречались в товарах — для подсказки в форме.
+ *
+ * Читается из колонки brand, а не из снимка каталога: админке нужен список
+ * сразу после сохранения, а снимок к этому моменту ещё прежний.
+ */
+export function listBrands(): string[] {
+  const rows = getDb()
+    .prepare("SELECT DISTINCT brand FROM products WHERE brand <> ''")
+    .all() as Array<{ brand: string }>;
+  return rows
+    .map((row) => row.brand)
+    .sort((a, b) => a.localeCompare(b, "ru"));
+}
+
 /** Порядок товаров внутри раздела: список id в нужной последовательности. */
 export function reorderProducts(ids: string[]): void {
   const db = getDb();
@@ -342,7 +406,7 @@ export function saveCategory(
   previousId?: string,
   adoptProducts = false,
 ): SaveResult {
-  const parsed = categorySchema.safeParse(input);
+  const parsed = categorySchema.safeParse(deepTrim(input));
   if (!parsed.success) {
     return { ok: false, problems: describe(parsed.error.issues) };
   }
@@ -577,7 +641,7 @@ export function reorderCategories(ids: string[]): void {
 /* ------------------------------------------------------------------ */
 
 export function saveSite(input: unknown): SaveResult {
-  const parsed = siteSchema.safeParse(input);
+  const parsed = siteSchema.safeParse(deepTrim(input));
   if (!parsed.success) {
     return { ok: false, problems: describe(parsed.error.issues) };
   }

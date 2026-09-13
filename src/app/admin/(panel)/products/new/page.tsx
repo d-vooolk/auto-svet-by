@@ -1,7 +1,7 @@
 import { ProductForm } from "@/components/admin/ProductForm";
 import { getSite } from "@/lib/catalog";
 import type { Product } from "@/lib/schema";
-import { listCategoriesBrief } from "@/lib/store";
+import { listBrands, listCategoriesBrief, nextSku } from "@/lib/store";
 
 export const metadata = { title: "Новый товар" };
 
@@ -30,9 +30,19 @@ export default async function NewProductPage({ searchParams }: PageProps) {
 
   return (
     <ProductForm
-      // Если пришли из конкретного раздела, он уже выбран — одно действие меньше.
-      product={{ ...BLANK, categoryId: category ?? categories[0]?.id ?? "" }}
+      product={{
+        ...BLANK,
+        // Если пришли из конкретного раздела, он уже выбран — одно действие
+        // меньше.
+        categoryId: category ?? categories[0]?.id ?? "",
+        // Артикул сразу свободный: заполнять его руками не нужно, а забыть
+        // — нечего. Занять его между открытием формы и сохранением может
+        // только другой такой же черновик, и на это есть проверка в
+        // saveProduct.
+        sku: nextSku(),
+      }}
       categories={categories}
+      brands={listBrands()}
       thumbs={{}}
       currencySymbol={site.currencySymbol}
     />

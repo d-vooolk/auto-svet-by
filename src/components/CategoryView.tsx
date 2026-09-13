@@ -97,11 +97,6 @@ export function CategoryView({ category }: { category: Category }) {
         <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl">
           {category.name}
         </h1>
-        {category.excerpt && (
-          <p className="mt-2.5 max-w-2xl text-base text-brand-500">
-            {category.excerpt}
-          </p>
-        )}
       </header>
 
       {children.length > 0 && (
@@ -141,13 +136,20 @@ export function CategoryView({ category }: { category: Category }) {
       )}
 
       {/* Текст под сеткой, а не над ней: пользователю нужны товары сразу,
-          а поисковику всё равно, где на странице лежит описание раздела. */}
-      {category.description && (
+          а поисковику всё равно, где на странице лежит описание раздела.
+          Короткое описание тоже здесь, первым абзацем — раньше оно стояло под
+          заголовком и отодвигало вниз плитку подразделов и сами товары.
+          В описание страницы для поиска оно идёт из categoryMetadata, так что
+          на выдачу перенос не влияет. */}
+      {(category.excerpt || category.description) && (
         <section className="prose-shop mt-14 max-w-3xl border-t border-brand-100 pt-10">
           <h2 className="mb-3 text-xl font-semibold text-brand-900">
             О разделе «{category.name}»
           </h2>
-          {category.description.split("\n\n").map((paragraph, index) => (
+          {category.excerpt && (
+            <p className="text-base text-brand-900">{category.excerpt}</p>
+          )}
+          {category.description?.split("\n\n").map((paragraph, index) => (
             <p key={index}>{paragraph}</p>
           ))}
         </section>

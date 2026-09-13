@@ -144,11 +144,6 @@ export default async function ProductPage({ params }: PageProps) {
         <h1 className="text-3xl font-semibold text-brand-900 sm:text-4xl lg:text-[2.75rem] lg:leading-[1.1]">
           {product.title}
         </h1>
-        {product.excerpt && (
-          <p className="mt-3 max-w-2xl text-base text-brand-500">
-            {product.excerpt}
-          </p>
-        )}
       </header>
 
       <ProductPurchase
@@ -167,10 +162,19 @@ export default async function ProductPage({ params }: PageProps) {
 
       {/* -------------------- Описание и характеристики ------------------ */}
       <div className="mt-14 grid gap-10 border-t border-brand-100 pt-10 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-12">
-        {product.description && (
+        {/* Короткое описание — первым абзацем перед полным, а не под
+            заголовком, как раньше. Под заголовком оно отодвигало от первого
+            экрана галерею, цену и кнопку заказа — то, за чем на страницу
+            товара и приходят. В поиске от переноса ничего не изменилось:
+            в описание страницы excerpt попадает через generateMetadata,
+            а не из этого места вёрстки. */}
+        {(product.excerpt || product.description) && (
           <section className="prose-shop">
             <h2 className="mb-4 text-xl font-semibold text-brand-900">Описание</h2>
-            {product.description.split("\n\n").map((paragraph, index) => (
+            {product.excerpt && (
+              <p className="text-base text-brand-900">{product.excerpt}</p>
+            )}
+            {product.description?.split("\n\n").map((paragraph, index) => (
               <p key={index}>{paragraph}</p>
             ))}
           </section>
